@@ -1,46 +1,43 @@
 "use client"
-import { Link, TextField, Button, Flex, Card, Heading } from "@radix-ui/themes"
+import { Link, TextField, Button, Flex, Card, Heading, Text, Callout } from "@radix-ui/themes"
+import { InfoCircledIcon } from "@radix-ui/react-icons"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-
-const mockUsers = [
-    {
-        username: "administrador",
-        role: "administrador",
-        route: "/AdminDashboard",
-        password: "password"
-    },
-    {
-        username: "cajero",
-        role: "cajero", 
-        route: "/CheckoutMenu",
-        password: "password"
-    }
-]
+import { loginUserAction } from "../admin/actions"
 
 export default function Login() {
     const [inputUsername, setInputUsername] = useState("")
     const [inputPassword, setInputPassword] = useState("")
+    const [errorMsg, setErrorMsg] = useState<string | null>(null)
+    const [loading, setLoading] = useState(false)
 
     const router = useRouter()
 
-    const handleLogin = () => {
-        const validUser = mockUsers.find(
-            (u) => u.username === inputUsername && u.password === inputPassword
-        )
-        
-        if (validUser) {
-            alert(`Login successful. Entering as: ${validUser.role}`)
-            localStorage.setItem("rolUsuario", validUser.role)
-            router.push(validUser.route)
+    const handleLogin = async () => {
+        setErrorMsg(null)
+        setLoading(true)
+
+        const result = await loginUserAction(inputUsername, inputPassword)
+        setLoading(false)
+
+        if (result.error) {
+            setErrorMsg(result.error)
+            return
+        }
+
+        const role = result.role!
+        alert(`Login successful. Entering as: ${role}`)
+        localStorage.setItem("rolUsuario", role)
+
+        if (role === "administrador") {
+            router.push("/AdminPage")
         } else {
-            alert("Invalid credentials")
+            router.push("/CheckoutMenu")
         }
     }
 
     return (
         <div className="flex flex-col items-center justify-center gap-4 min-h-screen p-9 transition-colors duration-300 bg-gray-50 dark:bg-gray-900">  
-            
             {/* Main Brand Link - Blue Theme (#33589c) */}
             <Link 
                 href="/landingPage" 
@@ -52,17 +49,25 @@ export default function Login() {
             </Link>
 
             {/* Login Form Container - Dark Mode Support */}
-            <Card className="w-75 p-8 transition-all duration-300 hover:shadow-xl border-2 border-[#33589c] bg-white dark:bg-gray-800">
+            <Card className="w-80 p-8 transition-all duration-300 hover:shadow-xl border-2 border-[#33589c] bg-white dark:bg-gray-800">
                 <Flex direction="column" gap="4">
-                    
                     <Heading size="4" align="center" className="text-[#33589c] dark:text-white">
                         Sign In
                     </Heading>
+
+                    {errorMsg && (
+                        <Callout.Root color="crimson" size="1">
+                            <Callout.Icon>
+                                <InfoCircledIcon />
+                            </Callout.Icon>
+                            <Callout.Text>{errorMsg}</Callout.Text>
+                        </Callout.Root>
+                    )}
                     
                     <Flex direction="column" gap="3">
-                        {/* Inputs with hover matching the blue theme */}
                         <TextField.Root 
                             radius="small" 
+                            size="3"
                             className="transition-colors border border-gray-300 dark:border-gray-600 hover:border-[#33589c] dark:hover:border-[#33589c] bg-transparent"
                             value={inputUsername} 
                             onChange={(e) => setInputUsername(e.target.value)} 
@@ -70,6 +75,7 @@ export default function Login() {
                         />
                         <TextField.Root 
                             radius="small" 
+                            size="3"
                             className="transition-colors border border-gray-300 dark:border-gray-600 hover:border-[#33589c] dark:hover:border-[#33589c] bg-transparent"
                             value={inputPassword} 
                             onChange={(e) => setInputPassword(e.target.value)} 
@@ -78,18 +84,17 @@ export default function Login() {
                         />
                     </Flex>
                     
-                    {/* Login Action Button - Green Theme (#589c33) */}
                     <Button 
                         size="3"
                         variant="ghost"
+                        disabled={loading}
                         className="mt-3 cursor-pointer transition-all duration-200 hover:scale-105 border-2 border-[#589c33] text-[#589c33] dark:text-white bg-transparent hover:bg-[#589c33] hover:text-white dark:hover:bg-[#589c33]"
                         onClick={handleLogin}
                     >
-                        Enter
+                        {loading ? "Entrando..." : "Enter"}
                     </Button>
                 </Flex>
             </Card>
-            
         </div> 
     )
 }

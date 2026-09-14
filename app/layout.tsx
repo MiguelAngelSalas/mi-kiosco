@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@radix-ui/themes/styles.css";
 import "./globals.css";
+import {Toaster} from "react-hot-toast"
 
 // Importamos tu nuevo administrador
 import { ThemeProvider } from "@/app/components/ThemeProviders"
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col">
         {/* Envolvemos la app entera con el ThemeProvider que acabás de crear */}
         <ThemeProvider>
+          <Toaster position="bottom-right" />
           {children}
         </ThemeProvider>
       </body>
