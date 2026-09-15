@@ -4,6 +4,7 @@ import { InfoCircledIcon } from "@radix-ui/react-icons"
 import { registerUserAction } from "../admin/actions"
 import Link from "next/link"
 import { useState } from "react"
+import toast from "react-hot-toast" // Importamos toast
 
 export default function CreateUserPage() {
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -14,14 +15,20 @@ export default function CreateUserPage() {
         setErrorMsg(null)
         setLoading(true)
         const formData = new FormData(e.currentTarget)
+        
         try {
             await registerUserAction(formData)
         } catch (err: any) {
-            // Re-lanzar si es la excepción interna de redirección de Next.js
+            // Si es la redirección de Next.js, significa que todo salió bien
             if (err?.message === "NEXT_REDIRECT" || err?.digest?.startsWith("NEXT_REDIRECT")) {
-                throw err
+                toast.success("Usuario creado exitosamente")
+                throw err // Dejamos que Next.js haga la redirección
             }
-            setErrorMsg(err.message || "Ocurrió un error al registrar")
+            
+            // Si es un error real (ej: usuario ya existe)
+            const errorMessage = err.message || "Ocurrió un error al registrar"
+            setErrorMsg(errorMessage)
+            toast.error(errorMessage)
         } finally {
             setLoading(false)
         }

@@ -1,8 +1,9 @@
 "use client"
-import { Heading, Button, Card, Flex, TextField } from "@radix-ui/themes"
+import { Heading, Button, Card, Flex, TextField, Text } from "@radix-ui/themes"
 import { useState, useEffect } from "react"
 import { updateProductAction } from "../admin/actions" // Ajustá la ruta según donde tengas tus Server Actions
 import { useRouter } from "next/navigation"
+import toast from "react-hot-toast" // Importamos toast
 
 interface Product {
     id: string
@@ -54,20 +55,27 @@ export default function EditProductModal({ product, onClose, onSuccess }: EditPr
         formData.append("stock", editForm.stock.toString())
         formData.append("category", editForm.category)
 
-        const res = await updateProductAction(product.id, formData)
-        setLoading(false)
+        try {
+            const res = await updateProductAction(product.id, formData)
 
-        if (res?.error) {
-            alert(res.error)
-            return
-        }
+            if (res?.error) {
+                toast.error(res.error) // Reemplazamos el alert
+                setLoading(false)
+                return
+            }
 
-        if (onSuccess) {
-            onSuccess({ ...product, ...editForm })
-        } else {
-            router.refresh()
+            if (onSuccess) {
+                onSuccess({ ...product, ...editForm })
+            } else {
+                toast.success("Producto actualizado")
+                router.refresh()
+            }
+            onClose()
+        } catch (error) {
+            toast.error("Ocurrió un error al actualizar el producto")
+        } finally {
+            setLoading(false)
         }
-        onClose()
     }
 
     return (
@@ -79,41 +87,56 @@ export default function EditProductModal({ product, onClose, onSuccess }: EditPr
                 
                 <div className="flex flex-col gap-4">
                     <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
+                        <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                            Nombre
+                        </Text>
                         <TextField.Root 
+                            size="3"
                             value={editForm.name} 
                             onChange={(e) => setEditForm({...editForm, name: e.target.value})}
                         />
                     </div>
                     <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Categoría</label>
+                        <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                            Categoría
+                        </Text>
                         <TextField.Root 
+                            size="3"
                             value={editForm.category} 
                             onChange={(e) => setEditForm({...editForm, category: e.target.value})}
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Precio Venta</label>
+                            <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                                Precio Venta
+                            </Text>
                             <TextField.Root 
                                 type="number"
+                                size="3"
                                 value={editForm.priceSell} 
                                 onChange={(e) => setEditForm({...editForm, priceSell: Number(e.target.value)})}
                             />
                         </div>
                         <div>
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Costo</label>
+                            <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                                Costo
+                            </Text>
                             <TextField.Root 
                                 type="number"
+                                size="3"
                                 value={editForm.cost} 
                                 onChange={(e) => setEditForm({...editForm, cost: Number(e.target.value)})}
                             />
                         </div>
                     </div>
                     <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Stock</label>
+                        <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                            Stock
+                        </Text>
                         <TextField.Root 
                             type="number"
+                            size="3"
                             value={editForm.stock} 
                             onChange={(e) => setEditForm({...editForm, stock: Number(e.target.value)})}
                         />
@@ -123,6 +146,7 @@ export default function EditProductModal({ product, onClose, onSuccess }: EditPr
                         <Button 
                             variant="soft" 
                             color="gray"
+                            size="3"
                             onClick={onClose}
                             disabled={loading}
                             className="cursor-pointer"
@@ -130,6 +154,7 @@ export default function EditProductModal({ product, onClose, onSuccess }: EditPr
                             Cancelar
                         </Button>
                         <Button 
+                            size="3"
                             className="cursor-pointer bg-[#33589c] text-white hover:bg-[#28467b]"
                             onClick={handleSave}
                             disabled={loading}

@@ -1,7 +1,8 @@
 "use client"
-import { Heading, Button, Card, Flex, TextField } from "@radix-ui/themes"
+import { Heading, Button, Card, Flex, TextField, Text } from "@radix-ui/themes"
 import { useState } from "react"
 import { addProductAction } from "@/app/admin/actions"
+import toast from "react-hot-toast"
 
 interface Product {
     id: string
@@ -33,8 +34,9 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
     if (!isOpen) return null
 
     const handleSave = async () => {
+        // Solo exigimos el nombre si el ID lo autogenera la base de datos/Server Action
         if (!form.name) {
-            alert("El ID y el Nombre son obligatorios")
+            toast.error("El Nombre del producto es obligatorio")
             return
         }
 
@@ -47,15 +49,25 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
         formData.append("cost", form.cost.toString())
         formData.append("stock", form.stock.toString())
 
-        await addProductAction(formData)
-        setLoading(false)
-
-        onSuccess({
-            ...form,
-            qty: 1
-        })
-        setForm({ id: "", name: "", category: "Golosinas", priceSell: 0, cost: 0, stock: 0 })
-        onClose()
+        try {
+            await addProductAction(formData)
+            
+            // Si todo sale bien
+            onSuccess({
+                ...form,
+                id: form.id || "AUTOGENERADO", // Si lo generás en el backend, acá podés poner un placeholder hasta que refresque
+                qty: 1
+            })
+            
+            setForm({ id: "", name: "", category: "Golosinas", priceSell: 0, cost: 0, stock: 0 })
+            onClose()
+            // Nota: el toast.success lo estás disparando en AdminPanel cuando se llama a onSuccess, 
+            // pero si querés podés ponerlo acá también y sacarlo del AdminPanel.
+        } catch (error) {
+            toast.error("Ocurrió un error al crear el producto")
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -64,53 +76,80 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                 <Heading size="4" className="text-[#33589c] dark:text-white mb-4">
                     Agregar Nuevo Producto
                 </Heading>
+                
                 <div className="flex flex-col gap-4">
-                    
                     <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
+                        <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                            Nombre
+                        </Text>
                         <TextField.Root 
+                            size="3"
                             value={form.name} 
                             onChange={(e) => setForm({...form, name: e.target.value})}
                         />
                     </div>
                     <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Categoría</label>
+                        <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                            Categoría
+                        </Text>
                         <TextField.Root 
+                            size="3"
                             value={form.category} 
                             onChange={(e) => setForm({...form, category: e.target.value})}
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Precio Venta</label>
+                            <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                                Precio Venta
+                            </Text>
                             <TextField.Root 
                                 type="number"
+                                size="3"
                                 value={form.priceSell} 
                                 onChange={(e) => setForm({...form, priceSell: Number(e.target.value)})}
                             />
                         </div>
                         <div>
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Costo</label>
+                            <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                                Costo
+                            </Text>
                             <TextField.Root 
                                 type="number"
+                                size="3"
                                 value={form.cost} 
                                 onChange={(e) => setForm({...form, cost: Number(e.target.value)})}
                             />
                         </div>
                     </div>
                     <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Stock</label>
+                        <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                            Stock
+                        </Text>
                         <TextField.Root 
                             type="number"
+                            size="3"
                             value={form.stock} 
                             onChange={(e) => setForm({...form, stock: Number(e.target.value)})}
                         />
                     </div>
                     <Flex justify="end" gap="3" mt="4">
-                        <Button variant="soft" color="gray" onClick={onClose} disabled={loading} className="cursor-pointer">
+                        <Button 
+                            variant="soft" 
+                            color="gray" 
+                            size="3"
+                            onClick={onClose} 
+                            disabled={loading} 
+                            className="cursor-pointer"
+                        >
                             Cancelar
                         </Button>
-                        <Button className="cursor-pointer bg-[#33589c] text-white hover:bg-[#28467b]" onClick={handleSave} disabled={loading}>
+                        <Button 
+                            size="3"
+                            className="cursor-pointer bg-[#33589c] text-white hover:bg-[#28467b]" 
+                            onClick={handleSave} 
+                            disabled={loading}
+                        >
                             {loading ? "Creando..." : "Crear Producto"}
                         </Button>
                     </Flex>

@@ -3,6 +3,7 @@ import { Heading, TextField, Button, Card, Table, IconButton, Flex, Text } from 
 import { TrashIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import toast from "react-hot-toast"
 import ButtonCheckOut from "@/app/components/ButtonCheckOut"
 
 interface Product {
@@ -67,6 +68,7 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
 
     const handleRemove = (id: string | number) => {
         setCart(cart.filter(item => item.id !== id))
+        toast.success("Producto removido del carrito")
     }
 
     const subTotal = cart.reduce((acc, item) => acc + (item.priceSell * item.qty), 0)
@@ -74,6 +76,7 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
     useEffect(() => {
         const storedRole = localStorage.getItem("rolUsuario")
         if (!storedRole) {
+            toast.error("Debes iniciar sesión")
             router.push("/login")
         } else {
             setUserRole(storedRole)
@@ -100,8 +103,8 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
                     
                     {userRole === "administrador" && (
                         <Button 
-                            variant="ghost"
-                            className="cursor-pointer transition-all duration-200 hover:scale-105 border-2 border-[#33589c] text-[#33589c] dark:text-white bg-transparent hover:bg-[#33589c] hover:text-white"
+                            variant="solid"
+                            className="cursor-pointer transition-all duration-200 hover:scale-105 bg-[#33589c] text-white hover:bg-[#28467b]"
                             onClick={() => router.push("/AdminPage")}
                         >
                             Panel Admin
@@ -109,10 +112,11 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
                     )}
                     
                     <Button 
-                        variant="ghost"
-                        className="cursor-pointer transition-all duration-200 hover:scale-105 border-2 border-[#9d3358] text-[#9d3358] dark:text-white bg-transparent hover:bg-[#9d3358] hover:text-white"
+                        variant="solid"
+                        className="cursor-pointer transition-all duration-200 hover:scale-105 bg-[#9d3358] text-white hover:bg-[#7d2645]"
                         onClick={() => {
                             localStorage.removeItem("rolUsuario")
+                            toast.success("Sesión cerrada")
                             router.push("/login")
                         }}
                     >
@@ -173,18 +177,18 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
                                     <Table.RowHeaderCell className="font-medium dark:text-gray-200 text-base">{item.name}</Table.RowHeaderCell>
                                     <Table.Cell justify="center">
                                         <Flex gap="3" align="center" justify="center">
-                                            <IconButton size="1" onClick={() => handleDecrement(item.id)} className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-black dark:bg-gray-700 dark:text-white">
+                                            <IconButton size="1" onClick={() => handleDecrement(item.id)} className="cursor-pointer border border-[#33589c] text-[#33589c] bg-transparent hover:bg-[#33589c] hover:text-white dark:border-blue-400 dark:text-white">
                                                 <MinusIcon />
                                             </IconButton>
                                             <Text weight="bold" className="dark:text-white w-4 text-center">{item.qty}</Text>
-                                            <IconButton size="1" onClick={() => handleIncrement(item.id)} className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-black dark:bg-gray-700 dark:text-white">
+                                            <IconButton size="1" onClick={() => handleIncrement(item.id)} className="cursor-pointer border border-[#33589c] text-[#33589c] bg-transparent hover:bg-[#33589c] hover:text-white dark:border-blue-400 dark:text-white">
                                                 <PlusIcon />
                                             </IconButton>
                                         </Flex> 
                                     </Table.Cell>
                                     <Table.Cell justify="end" className="dark:text-gray-200 text-base">${item.price * item.qty}</Table.Cell>
                                     <Table.Cell justify="center">
-                                        <IconButton size="2" onClick={() => handleRemove(item.id)} className="cursor-pointer bg-transparent border border-[#9d3358] text-[#9d3358] hover:bg-[#9d3358] hover:text-white">
+                                        <IconButton size="2" onClick={() => handleRemove(item.id)} className="cursor-pointer border border-[#9d3358] text-[#9d3358] bg-transparent hover:bg-[#9d3358] hover:text-white">
                                             <TrashIcon />
                                         </IconButton>
                                     </Table.Cell>

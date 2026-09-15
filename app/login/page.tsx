@@ -3,6 +3,7 @@ import { Link, TextField, Button, Flex, Card, Heading, Text, Callout } from "@ra
 import { InfoCircledIcon } from "@radix-ui/react-icons"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import toast from "react-hot-toast" // Importamos toast
 import { loginUserAction } from "../admin/actions"
 
 export default function Login() {
@@ -22,11 +23,12 @@ export default function Login() {
 
         if (result.error) {
             setErrorMsg(result.error)
+            toast.error(result.error) // Agregamos el toast de error
             return
         }
 
         const role = result.role!
-        alert(`Login successful. Entering as: ${role}`)
+        toast.success(`Login exitoso. Ingresando como: ${role}`) // Reemplazamos el alert
         localStorage.setItem("rolUsuario", role)
 
         if (role === "administrador") {

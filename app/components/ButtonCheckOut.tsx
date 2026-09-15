@@ -22,7 +22,7 @@ export default function ButtonCheckOut({subTotal, onClearCart}: ButtonCheckOutPr
                     variant="solid"
                     className="w-full mt-6 cursor-pointer transition-all duration-200 hover:scale-105 border-2 border-[#589c33] bg-[#589c33] text-white hover:bg-white hover:text-[#589c33] dark:hover:bg-gray-800"
                 >
-                    CHECKOUT
+                    Realizar Venta
                 </Button>
             </Dialog.Trigger>
 
