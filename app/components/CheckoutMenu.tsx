@@ -28,9 +28,20 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
     const [productos] = useState<Product[]>(initialProducts || [])
 
     const handleAddCart = (producto: Product) => {
-        setCart(prevCart => {
+    // Evita agregar si directamente no hay stock inicial
+    if (producto.stock < 1) {
+        toast.error(`No hay stock disponible de ${producto.name}`)
+        return
+    }
+
+    setCart(prevCart => {
             const existingItem = prevCart.find(item => item.id === producto.id)
             if (existingItem) {
+                // Verifica límite antes de sumar otro
+                if (existingItem.qty >= producto.stock) {
+                    toast.error(`Solo hay ${producto.stock} unidades en stock`)
+                    return prevCart
+                }
                 return prevCart.map((item) =>
                     item.id === producto.id ? { ...item, qty: item.qty + 1 } : item
                 )
@@ -54,7 +65,16 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
     }
 
     const handleIncrement = (id: string | number) => {
-        setCart(cart.map(item => item.id === id ? { ...item, qty: item.qty + 1 } : item))
+        setCart(cart.map(item => {
+            if (item.id === id) {
+                if (item.qty >= item.stock) {
+                    toast.error(`Stock máximo alcanzado (${item.stock})`)
+                    return item
+                }
+                return { ...item, qty: item.qty + 1 }
+            }
+            return item
+        }))
     }
 
     const handleDecrement = (id: string | number) => {
@@ -65,6 +85,7 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
             return item
         }))
     }
+
 
     const handleRemove = (id: string | number) => {
         setCart(cart.filter(item => item.id !== id))
@@ -180,8 +201,42 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
                                             <IconButton size="1" onClick={() => handleDecrement(item.id)} className="cursor-pointer border border-[#33589c] text-[#33589c] bg-transparent hover:bg-[#33589c] hover:text-white dark:border-blue-400 dark:text-white">
                                                 <MinusIcon />
                                             </IconButton>
-                                            <Text weight="bold" className="dark:text-white w-4 text-center">{item.qty}</Text>
-                                            <IconButton size="1" onClick={() => handleIncrement(item.id)} className="cursor-pointer border border-[#33589c] text-[#33589c] bg-transparent hover:bg-[#33589c] hover:text-white dark:border-blue-400 dark:text-white">
+                                            <input 
+                                                type="number" 
+                                                value={item.qty === 0 ? "" : item.qty} 
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    const newQty = value === "" ? 0 : parseInt(value, 10);
+                                                    
+                                                    if (!isNaN(newQty) && newQty >= 0) {
+                                                        // ACÁ AGREGAMOS LA VALIDACIÓN CONTRA EL STOCK
+                                                        if (newQty > item.stock) {
+                                                            toast.error(`Solo hay ${item.stock} unidades en stock`);
+                                                            // Lo topamos al máximo del stock en vez de dejar poner el número grande
+                                                            setCart(cart.map(i => i.id === item.id ? { ...i, qty: item.stock } : i));
+                                                        } else {
+                                                            // Si está todo bien, lo actualiza normal
+                                                            setCart(cart.map(i => i.id === item.id ? { ...i, qty: newQty } : i));
+                                                        }
+                                                    }
+                                                }}
+                                                onBlur={() => {
+                                                    if (item.qty === 0) {
+                                                        // OJO ACÁ: Corregí "qyt: 1" por "qty: 1"
+                                                        setCart(cart.map(i => i.id === item.id ? { ...i, qty: 1 } : i));
+                                                    }
+                                                }} 
+                                                className="w-10 text-center font-bold bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-[#33589c] focus:outline-none dark:text-white dark:hover:border-gray-600 transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            />
+                                            <IconButton 
+                                                size="1" 
+                                                onClick={() => handleIncrement(item.id)} 
+                                                disabled={item.qty >= item.stock} // Deshabilita el click
+                                                className={`border border-[#33589c] text-[#33589c] bg-transparent dark:border-blue-400 dark:text-white transition-colors duration-200 
+                                                    ${item.qty >= item.stock 
+                                                        ? 'opacity-50 cursor-not-allowed' // Estilo apagado si no hay stock
+                                                        : 'cursor-pointer hover:bg-[#33589c] hover:text-white' // Estilo normal
+                                                    }`}>                                                
                                                 <PlusIcon />
                                             </IconButton>
                                         </Flex> 
