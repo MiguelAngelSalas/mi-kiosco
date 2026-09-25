@@ -4,7 +4,7 @@ import { InfoCircledIcon } from "@radix-ui/react-icons"
 import { registerUserAction } from "../admin/actions"
 import Link from "next/link"
 import { useState } from "react"
-import toast from "react-hot-toast" // Importamos toast
+import toast from "react-hot-toast"
 
 export default function CreateUserPage() {
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -17,16 +17,25 @@ export default function CreateUserPage() {
         const formData = new FormData(e.currentTarget)
         
         try {
-            await registerUserAction(formData)
+            const respuesta = await registerUserAction(formData)
+            
+            // Verificamos si la acción nos devolvió un error controlado (ej: email duplicado)
+            if (respuesta && respuesta.error) {
+                setErrorMsg(respuesta.error)
+                toast.error(respuesta.error)
+                setLoading(false)
+                return // Cortamos la ejecución acá
+            }
+
         } catch (err: any) {
             // Si es la redirección de Next.js, significa que todo salió bien
             if (err?.message === "NEXT_REDIRECT" || err?.digest?.startsWith("NEXT_REDIRECT")) {
                 toast.success("Usuario creado exitosamente")
-                throw err // Dejamos que Next.js haga la redirección
+                throw err 
             }
             
-            // Si es un error real (ej: usuario ya existe)
-            const errorMessage = err.message || "Ocurrió un error al registrar"
+            // Si ocurre un error fatal del servidor
+            const errorMessage = err.message || "Ocurrió un error inesperado al registrar"
             setErrorMsg(errorMessage)
             toast.error(errorMessage)
         } finally {
@@ -51,11 +60,33 @@ export default function CreateUserPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <div className="flex gap-3">
+                        <div className="w-1/2">
+                            <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                                Nombre
+                            </Text>
+                            <TextField.Root name="nombre" required placeholder="Ej: Carlos" size="3" />
+                        </div>
+                        <div className="w-1/2">
+                            <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                                Apellido
+                            </Text>
+                            <TextField.Root name="apellido" required placeholder="Ej: Gómez" size="3" />
+                        </div>
+                    </div>
+
                     <div>
                         <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
-                            Usuario
+                            Correo Electrónico (Email)
                         </Text>
-                        <TextField.Root name="username" required placeholder="Ej: migue_admin" size="3" />
+                        <TextField.Root name="email" type="email" required placeholder="cajero@kiosco.com" size="3" />
+                    </div>
+
+                    <div>
+                        <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
+                            Teléfono (Opcional)
+                        </Text>
+                        <TextField.Root name="telefono" placeholder="11 1234 5678" size="3" />
                     </div>
 
                     <div>
@@ -70,10 +101,10 @@ export default function CreateUserPage() {
                             Rol
                         </Text>
                         <select 
-                            name="role"
+                            name="rol"
                             className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-[#33589c] text-sm"
                         >
-                            <option value="vendedor">Vendedor</option>
+                            <option value="cajero">Cajero</option>
                             <option value="administrador">Administrador</option>
                         </select>
                     </div>

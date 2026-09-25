@@ -3,55 +3,59 @@ import { Heading, Table, Button, Card, Text, Flex, TextField } from "@radix-ui/t
 import { MagnifyingGlassIcon, TrashIcon } from "@radix-ui/react-icons"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import toast from "react-hot-toast" // Importamos toast
-import EditProductModal from "./EditProductModal" 
-import AddProductModal from "@/app/components/AddProductModal" 
+import toast from "react-hot-toast"
+import EditProductModal, { Categoria } from "./EditProductModal" 
+import AddProductModal from "@/app/components/AddProductModal"
+import AddCategoryModal from "@/app/components/AddCategoryModal" 
 import { deleteProductAction } from "../admin/actions"
 
 interface Products {
-    id: string
-    name: string
-    category: string
-    qty: number
-    priceSell: number
+    id_producto: string
+    nombre: string
+    id_categoria: string
+    precio_venta: number
     stock: number
-    cost: number
+    costo: number
 }
 
 interface AdminPanelProps {
     initialProducts: Products[]
+    initialCategorias: Categoria[] 
 }
 
-export default function AdminPanel({ initialProducts = [] }: AdminPanelProps) {
+export default function AdminPanel({ initialProducts = [], initialCategorias = [] }: AdminPanelProps) {
     const router = useRouter()
     const [isAuthorized, setIsAuthorized] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
     const [productos, setProductos] = useState<Products[]>(initialProducts || [])
+    
+    const [categorias, setCategorias] = useState<Categoria[]>(initialCategorias || [])
+    
     const [editingProduct, setEditingProduct] = useState<Products | null>(null)
     const [editForm, setEditForm] = useState({ name: "", priceSell: 0, cost: 0, stock: 0 })
+    
     const [isAddOpen, setIsAddOpen] = useState(false)
+    const [isCategoryOpen, setIsCategoryOpen] = useState(false)
 
-    // Filtrar con safe guards
     const productosFiltrados = productos.filter((item) => {
         const query = searchTerm.toLowerCase().trim()
-        if (!query) return true // Muestra todos si no hay búsqueda
+        if (!query) return true 
         
-        const nombre = (item.name || "").toLowerCase()
-        const codigo = String(item.id || "").toLowerCase()
+        const nombre = (item.nombre || "").toLowerCase()
+        const codigo = String(item.id_producto || "").padStart(4, '0').toLowerCase()
         return nombre.includes(query) || codigo.includes(query)
     })
 
     const handleOpenEdit = (item: Products) => {
         setEditingProduct(item)
         setEditForm({
-            name: item.name,
-            priceSell: item.priceSell,
-            cost: item.cost,
+            name: item.nombre,
+            priceSell: item.precio_venta,
+            cost: item.costo,
             stock: item.stock
         })
     }
 
-    // Security check: Only admins allowed
     useEffect(() => {
         const storedRole = localStorage.getItem("rolUsuario")
 
@@ -125,6 +129,7 @@ export default function AdminPanel({ initialProducts = [] }: AdminPanelProps) {
                         <Table.Root variant="surface" className="w-full">
                             <Table.Header className="bg-[#33589c] sticky top-0 z-10">
                                 <Table.Row>
+                                    <Table.ColumnHeaderCell className="text-white w-24">ID</Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell className="text-white">Product</Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell justify="end" className="text-white">Cost</Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell justify="end" className="text-white">Sale Price</Table.ColumnHeaderCell>
@@ -136,18 +141,21 @@ export default function AdminPanel({ initialProducts = [] }: AdminPanelProps) {
                             <Table.Body>
                                 {productosFiltrados.length === 0 ? (
                                     <Table.Row>
-                                        <Table.Cell colSpan={5} justify="center" className="py-8 text-gray-500">
+                                        <Table.Cell colSpan={6} justify="center" className="py-8 text-gray-500">
                                             No se encontraron productos con "{searchTerm}"
                                         </Table.Cell>
                                     </Table.Row>
                                 ) : (
                                     productosFiltrados.map((item) => (
-                                        <Table.Row key={item.id} align="center" className="border-b border-gray-200 dark:border-gray-700">
-                                            <Table.RowHeaderCell className="font-medium dark:text-gray-200">{item.name}</Table.RowHeaderCell>
-                                            <Table.Cell justify="end" className="dark:text-gray-300">${item.cost}</Table.Cell>
+                                        <Table.Row key={item.id_producto} align="center" className="border-b border-gray-200 dark:border-gray-700">
+                                            <Table.Cell className="text-gray-500 dark:text-gray-400 font-mono text-sm">
+                                                {String(item.id_producto).padStart(4, '0')}
+                                            </Table.Cell>
+                                            <Table.RowHeaderCell className="font-medium dark:text-gray-200">{item.nombre}</Table.RowHeaderCell>
+                                            <Table.Cell justify="end" className="dark:text-gray-300">${item.costo}</Table.Cell>
                                             <Table.Cell justify="end">
                                                 <Text weight="bold" style={{ color: "#589c33", fontSize: "1.1rem" }}>
-                                                    ${item.priceSell}
+                                                    ${item.precio_venta}
                                                 </Text>
                                             </Table.Cell>
                                             <Table.Cell justify="center">
@@ -160,7 +168,7 @@ export default function AdminPanel({ initialProducts = [] }: AdminPanelProps) {
                                                     <Button 
                                                         size="1" 
                                                         variant="outline" 
-                                                        onClick={() => setEditingProduct(item)}
+                                                        onClick={() => handleOpenEdit(item)}
                                                         className="cursor-pointer border border-[#33589c] text-[#33589c] dark:text-white dark:border-blue-400 hover:bg-[#33589c] hover:text-white"
                                                     >
                                                         Edit
@@ -169,11 +177,11 @@ export default function AdminPanel({ initialProducts = [] }: AdminPanelProps) {
                                                         size="1" 
                                                         variant="outline" 
                                                         onClick={async () => {
-                                                            if (window.confirm(`¿Estás seguro que querés borrar el producto "${item.name}" definitivamente?`)) {
+                                                            if (window.confirm(`¿Estás seguro que querés borrar el producto "${item.nombre}" definitivamente?`)) {
                                                                 try {
-                                                                    await deleteProductAction(item.id)
-                                                                    setProductos(productos.filter(p => p.id !== item.id))
-                                                                    toast.success(`Producto "${item.name}" eliminado`)
+                                                                    await deleteProductAction(item.id_producto)
+                                                                    setProductos(productos.filter(p => p.id_producto !== item.id_producto))
+                                                                    toast.success(`Producto "${item.nombre}" eliminado`)
                                                                 } catch (error) {
                                                                     toast.error("Hubo un error al borrar el producto")
                                                                 }
@@ -194,20 +202,35 @@ export default function AdminPanel({ initialProducts = [] }: AdminPanelProps) {
                     </div>
                 </div>
             </Card>
+
             <EditProductModal 
                 product={editingProduct} 
+                categoria={categorias} // Corregido: antes decía "categoria"
                 onClose={() => setEditingProduct(null)}
                 onSuccess={(updated) => {
-                    setProductos(productos.map(p => p.id === updated.id ? updated : p))
+                    setProductos(productos.map(p => p.id_producto === updated.id_producto ? updated : p))
                     toast.success("Producto actualizado")
                 }}
             />
+            
             <AddProductModal 
                 isOpen={isAddOpen}
                 onClose={() => setIsAddOpen(false)}
+                categorias={categorias} 
                 onSuccess={(newProduct) => {
                     setProductos([newProduct, ...productos])
                     toast.success("Producto creado exitosamente")
+                }}
+                onOpenCategoryModal={() => setIsCategoryOpen(true)} 
+            />
+
+            <AddCategoryModal 
+                isOpen={isCategoryOpen}
+                onClose={() => setIsCategoryOpen(false)}
+                onSuccess={(nuevaCategoria) => {
+                    setIsCategoryOpen(false)
+                    setCategorias([...categorias, nuevaCategoria])
+                    toast.success("Categoría agregada correctamente")
                 }}
             />
         </div>
