@@ -1,7 +1,6 @@
 "use client"
 import { Heading, Button, Card, Flex, TextField, Text } from "@radix-ui/themes"
 import { useState } from "react"
-import { addCategoryAction } from "@/app/admin/actions" // Asegurate de crear esta Server Action
 import toast from "react-hot-toast"
 
 export interface Categoria {
@@ -17,46 +16,26 @@ interface AddCategoryModalProps {
 
 export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCategoryModalProps) {
     const [nombreCategoria, setNombreCategoria] = useState("")
-    const [loading, setLoading] = useState(false)
 
     if (!isOpen) return null
 
-    const handleSave = async () => {
-        if (!nombreCategoria.trim()) {
+    const handleSave = () => {
+        const nombreLimpio = nombreCategoria.trim()
+
+        if (!nombreLimpio) {
             toast.error("El nombre de la categoría es obligatorio")
             return
         }
 
-        setLoading(true)
-        const formData = new FormData()
+        // Creamos la categoría localmente sin llamar al backend
+        onSuccess({
+            id_categoria: Date.now(), 
+            nombre_categoria: nombreLimpio
+        })
         
-        // Enviamos el nombre al backend
-        formData.append("nombre_categoria", nombreCategoria)
-
-        try {
-            // Llamamos a la Server Action (que tenés que crear en actions.ts)
-            const respuesta = await addCategoryAction(formData)
-            
-            if (respuesta?.error) {
-                toast.error(respuesta.error)
-                setLoading(false)
-                return
-            }
-            
-            // Si todo sale bien, actualizamos el estado en el componente padre
-            onSuccess({
-                id_categoria: respuesta?.idCategoria || "AUTOGENERADO", 
-                nombre_categoria: nombreCategoria
-            })
-            
-            toast.success("Categoría creada exitosamente")
-            setNombreCategoria("")
-            onClose()
-        } catch (error) {
-            toast.error("Ocurrió un error al crear la categoría")
-        } finally {
-            setLoading(false)
-        }
+        toast.success("Categoría agregada")
+        setNombreCategoria("")
+        onClose()
     }
 
     return (
@@ -77,7 +56,7 @@ export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCate
                             value={nombreCategoria} 
                             onChange={(e) => setNombreCategoria(e.target.value)}
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
+                                if (e.key === "Enter") {
                                     e.preventDefault()
                                     handleSave()
                                 }
@@ -91,7 +70,6 @@ export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCate
                             color="gray" 
                             size="3"
                             onClick={onClose} 
-                            disabled={loading} 
                             className="cursor-pointer"
                         >
                             Cancelar
@@ -99,10 +77,9 @@ export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCate
                         <Button 
                             size="3"
                             className="cursor-pointer bg-[#33589c] text-white hover:bg-[#28467b]" 
-                            onClick={handleSave} 
-                            disabled={loading}
+                            onClick={handleSave}
                         >
-                            {loading ? "Guardando..." : "Guardar"}
+                            Guardar
                         </Button>
                     </Flex>
                 </div>

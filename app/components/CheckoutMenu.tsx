@@ -1,11 +1,10 @@
 "use client"
-import { Heading, TextField, Button, Card, Table, IconButton, Flex, Text, Dialog } from "@radix-ui/themes"
+import { Heading, TextField, Button, Card, Table, IconButton, Flex, Text } from "@radix-ui/themes"
 import { TrashIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import ButtonCheckOut from "@/app/components/ButtonCheckOut"
-import { abrirCajaAction } from "../actions/cajas.action" // Ajustá la ruta si tu action está en otra carpeta
 
 interface Product {
     id_producto: string
@@ -20,30 +19,29 @@ interface CartItem extends Product {
     qty: number
 }
 
+const DEFAULT_PRODUCTS: Product[] = [
+    { id_producto: "1", nombre: "Alfajor Guaymallén Chocolate", id_categoria: "1", precio_venta: 450, costo: 280, stock: 120 },
+    { id_producto: "2", nombre: "Coca Cola 500ml", id_categoria: "2", precio_venta: 1200, costo: 750, stock: 45 },
+    { id_producto: "3", nombre: "Caramelos Sugus x bolsa", id_categoria: "1", precio_venta: 850, costo: 500, stock: 15 },
+    { id_producto: "4", nombre: "Agua Mineral 500ml", id_categoria: "2", precio_venta: 900, costo: 520, stock: 80 },
+]
+
 interface CheckoutMenuProps {
-    initialProducts: Product[]
+    initialProducts?: Product[]
 }
 
-export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
+export default function CheckoutMenu({ initialProducts = DEFAULT_PRODUCTS }: CheckoutMenuProps) {
     const router = useRouter()
     const [userRole, setUserRole] = useState("")
     const [cart, setCart] = useState<CartItem[]>([])
     const [searchTerm, setSearchTerm] = useState("")
-    const [productos] = useState<Product[]>(initialProducts || [])
-    
-    // Estados para la caja
-    const [idCaja, setIdCaja] = useState<number>(0) // 0 significa cerrada
-    const [montoCaja, setMontoCaja] = useState("")
-    const [isOpening, setIsOpening] = useState(false)
-    const [cajaModalOpen, setCajaModalOpen] = useState(false)
+    const [productos] = useState<Product[]>(
+        initialProducts && initialProducts.length > 0 ? initialProducts : DEFAULT_PRODUCTS
+    )
 
     const handleAddCart = (producto: Product) => {
         if (producto.stock < 1) {
             toast.error(`No hay stock disponible de ${producto.nombre}`)
-            return
-        }
-        if (idCaja === 0) {
-            toast.error("Debes abrir la caja antes de vender")
             return
         }
 
@@ -113,44 +111,10 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
         setCart([])
     }
 
-    const handleAbrirCaja = async () => {
-        const montoNum = Number(montoCaja)
-        if (isNaN(montoNum) || montoNum < 0) {
-            toast.error("Ingresá un monto válido")
-            return
-        }
-
-        setIsOpening(true)
-
-        try {
-            // Buscamos el ID del usuario (Si no existe en localStorage, usamos 1 temporalmente)
-            const storedUserId = localStorage.getItem("idUsuario")
-            const userId = storedUserId ? Number(storedUserId) : 1 
-
-            // Llamamos a la BD
-            const respuesta = await abrirCajaAction(userId, montoNum)
-
-            if (respuesta?.error) {
-                toast.error(respuesta.error)
-            } else if (respuesta?.success && respuesta?.id_caja) {
-                // Guardamos el ID real de la base de datos y habilitamos el sistema
-                setIdCaja(respuesta.id_caja)
-                toast.success(`Caja abierta exitosamente con $${montoNum}`)
-                setMontoCaja("")
-                setCajaModalOpen(false) // Cerramos el modal
-            }
-        } catch (error) {
-            toast.error("Ocurrió un error al intentar abrir la caja")
-            console.error(error)
-        } finally {
-            setIsOpening(false)
-        }
-    }
-
     useEffect(() => {
         const storedRole = localStorage.getItem("rolUsuario")
         if (!storedRole) {
-            toast.error("Debes iniciar sesión")
+            toast.error("Debés iniciar sesión")
             router.push("/login")
         } else {
             setUserRole(storedRole)
@@ -180,69 +144,12 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
                 
                 <Flex align="center" gap="4">
                     <Text className="text-gray-500 dark:text-gray-300 font-medium">
-                        Rol activo: <span className="capitalize">{userRole}</span>
+                        Rol activo: <span className="capitalize">{userRole || "Usuario"}</span>
                     </Text>
 
-                    {/* BOTÓN Y MODAL DE ABRIR CAJA */}
-                    {idCaja === 0 ? (
-                        <Dialog.Root open={cajaModalOpen} onOpenChange={setCajaModalOpen}>
-                            <Dialog.Trigger>
-                                <Button 
-                                    variant="solid"
-                                    className="cursor-pointer transition-all duration-200 hover:scale-105 bg-[#589c33] text-white hover:bg-[#467d28]"
-                                >
-                                    Abrir Caja
-                                </Button>
-                            </Dialog.Trigger>
-
-                            <Dialog.Content style={{ maxWidth: 400 }} className="bg-white dark:bg-gray-800 border-2 border-[#33589c] p-6 rounded-lg">
-                                <Dialog.Title className="text-[#33589c] dark:text-white">
-                                    Abrir Turno / Caja
-                                </Dialog.Title>
-                                <Dialog.Description className="text-gray-500 dark:text-gray-400 mb-4 text-sm">
-                                    Ingresá el monto inicial en efectivo con el que empezás el turno.
-                                </Dialog.Description>
-
-                                <Flex direction="column" gap="3">
-                                    <Text as="div" size="2" mb="1" weight="bold" className="dark:text-white">
-                                        Monto Inicial ($)
-                                    </Text>
-                                    <TextField.Root 
-                                        type="number" 
-                                        placeholder="Ej: 5000" 
-                                        value={montoCaja}
-                                        onChange={(e) => setMontoCaja(e.target.value)}
-                                        className="dark:bg-gray-700"
-                                        disabled={isOpening}
-                                    />
-
-                                    <Flex gap="3" mt="4" justify="end">
-                                        <Button 
-                                            variant="soft" 
-                                            color="gray" 
-                                            className="cursor-pointer"
-                                            onClick={() => setCajaModalOpen(false)}
-                                            disabled={isOpening}
-                                        >
-                                            Cancelar
-                                        </Button>
-                                        
-                                        <Button 
-                                            className="cursor-pointer bg-[#589c33] text-white hover:bg-[#467d28]"
-                                            onClick={handleAbrirCaja}
-                                            disabled={!montoCaja || isOpening}
-                                        >
-                                            {isOpening ? "Abriendo..." : "Confirmar Apertura"}
-                                        </Button>
-                                    </Flex>
-                                </Flex>
-                            </Dialog.Content>
-                        </Dialog.Root>
-                    ) : (
-                        <div className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded-md text-sm font-bold border border-green-300 dark:border-green-700">
-                            Caja Abierta (ID: {idCaja})
-                        </div>
-                    )}
+                    <div className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded-md text-sm font-bold border border-green-300 dark:border-green-700">
+                        Caja Habilitada
+                    </div>
                     
                     {userRole === "administrador" && (
                         <Button 
@@ -259,6 +166,7 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
                         className="cursor-pointer transition-all duration-200 hover:scale-105 bg-[#9d3358] text-white hover:bg-[#7d2645]"
                         onClick={() => {
                             localStorage.removeItem("rolUsuario")
+                            localStorage.removeItem("token")
                             toast.success("Sesión cerrada")
                             router.push("/login")
                         }}
@@ -270,27 +178,17 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
 
             {/* Buscador */}
             <div className="relative w-full">
-                {/* Envolvemos en un div para aplicar los estilos de deshabilitado sin romper la hidratación de React */}
-                <div className={idCaja === 0 ? "opacity-50 cursor-not-allowed" : ""}>
-                    <TextField.Root 
-                        placeholder={idCaja === 0 ? "Abrí la caja para buscar productos..." : "Buscar producto o escanear código de barras..."} 
-                        size="3"
-                        value={searchTerm}
-                        // Solo permitimos escribir si la caja está abierta
-                        onChange={(e) => {
-                            if (idCaja !== 0) handleSearchChange(e);
-                        }}
-                        // Evita que el usuario llegue al input con la tecla TAB si la caja está cerrada
-                        tabIndex={idCaja === 0 ? -1 : 0} 
-                        className={`transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 ${
-                            idCaja === 0 ? "pointer-events-none" : "hover:border-[#33589c] dark:hover:border-[#33589c]"
-                        }`}
-                    >
-                        <TextField.Slot>
-                            <MagnifyingGlassIcon height="16" width="16" className="text-gray-500 dark:text-gray-400" />
-                        </TextField.Slot>    
-                    </TextField.Root>
-                </div>
+                <TextField.Root 
+                    placeholder="Buscar producto o escanear código de barras..." 
+                    size="3"
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-[#33589c] dark:hover:border-[#33589c]"
+                >
+                    <TextField.Slot>
+                        <MagnifyingGlassIcon height="16" width="16" className="text-gray-500 dark:text-gray-400" />
+                    </TextField.Slot>    
+                </TextField.Root>
                 
                 {productosFiltrados.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border-2 border-[#33589c] rounded-lg shadow-lg max-h-60 overflow-y-auto">
@@ -331,7 +229,7 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
                             {cart.length === 0 ? (
                                 <Table.Row>
                                     <Table.Cell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400 font-medium">
-                                        {idCaja === 0 ? "🔒 Caja cerrada. Abrí la caja para empezar a cobrar." : "🛒 El carrito está vacío."}
+                                        🛒 El carrito está vacío. Agregá productos usando el buscador.
                                     </Table.Cell>
                                 </Table.Row>
                             ) : (
@@ -413,7 +311,7 @@ export default function CheckoutMenu({ initialProducts }: CheckoutMenuProps) {
                     <ButtonCheckOut 
                         subTotal={subTotalFormateado} 
                         items={itemsParaCheckout} 
-                        idCaja={idCaja} 
+                        idCaja={1} 
                         onClearCart={vaciarCarrito} 
                     />
                 </Card>

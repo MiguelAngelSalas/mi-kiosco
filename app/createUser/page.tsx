@@ -1,4 +1,5 @@
 "use client"
+
 import { Heading, Card, Button, Flex, Text, TextField, Callout } from "@radix-ui/themes"
 import { InfoCircledIcon } from "@radix-ui/react-icons"
 import { registerUserAction } from "../admin/actions"
@@ -14,31 +15,30 @@ export default function CreateUserPage() {
         e.preventDefault()
         setErrorMsg(null)
         setLoading(true)
-        const formData = new FormData(e.currentTarget)
-        
+
+        const form = e.currentTarget
+        const formData = new FormData(form)
+
         try {
             const respuesta = await registerUserAction(formData)
-            
-            // Verificamos si la acción nos devolvió un error controlado (ej: email duplicado)
-            if (respuesta && respuesta.error) {
+
+            if (respuesta?.error) {
                 setErrorMsg(respuesta.error)
                 toast.error(respuesta.error)
                 setLoading(false)
-                return // Cortamos la ejecución acá
+                return
             }
 
+            toast.success("Usuario creado exitosamente")
         } catch (err: any) {
-            // Si es la redirección de Next.js, significa que todo salió bien
             if (err?.message === "NEXT_REDIRECT" || err?.digest?.startsWith("NEXT_REDIRECT")) {
                 toast.success("Usuario creado exitosamente")
-                throw err 
+                throw err
             }
-            
-            // Si ocurre un error fatal del servidor
-            const errorMessage = err.message || "Ocurrió un error inesperado al registrar"
+
+            const errorMessage = err?.message || "Ocurrió un error inesperado al registrar"
             setErrorMsg(errorMessage)
             toast.error(errorMessage)
-        } finally {
             setLoading(false)
         }
     }
@@ -60,40 +60,31 @@ export default function CreateUserPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <div className="flex gap-3">
-                        <div className="w-1/2">
-                            <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
-                                Nombre
-                            </Text>
-                            <TextField.Root name="nombre" required placeholder="Ej: Carlos" size="3" />
-                        </div>
-                        <div className="w-1/2">
-                            <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
-                                Apellido
-                            </Text>
-                            <TextField.Root name="apellido" required placeholder="Ej: Gómez" size="3" />
-                        </div>
-                    </div>
-
                     <div>
                         <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
-                            Correo Electrónico (Email)
+                            Nombre de Usuario
                         </Text>
-                        <TextField.Root name="email" type="email" required placeholder="cajero@kiosco.com" size="3" />
-                    </div>
-
-                    <div>
-                        <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
-                            Teléfono (Opcional)
-                        </Text>
-                        <TextField.Root name="telefono" placeholder="11 1234 5678" size="3" />
+                        <TextField.Root 
+                            name="nombre" 
+                            required 
+                            placeholder="Ej: miguel" 
+                            size="3" 
+                            disabled={loading}
+                        />
                     </div>
 
                     <div>
                         <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
                             Contraseña
                         </Text>
-                        <TextField.Root name="password" type="password" required placeholder="••••••••" size="3" />
+                        <TextField.Root 
+                            name="password" 
+                            type="password" 
+                            required 
+                            placeholder="••••••••" 
+                            size="3" 
+                            disabled={loading}
+                        />
                     </div>
 
                     <div>
@@ -102,10 +93,11 @@ export default function CreateUserPage() {
                         </Text>
                         <select 
                             name="rol"
-                            className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-[#33589c] text-sm"
+                            disabled={loading}
+                            className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-[#33589c] text-sm disabled:opacity-50"
                         >
-                            <option value="cajero">Cajero</option>
-                            <option value="administrador">Administrador</option>
+                            <option value="0">Cajero (0)</option>
+                            <option value="1">Administrador (1)</option>
                         </select>
                     </div>
 
@@ -113,7 +105,7 @@ export default function CreateUserPage() {
                         type="submit"
                         size="3"
                         disabled={loading}
-                        className="cursor-pointer bg-[#9d3358] text-white hover:bg-[#7d2645] mt-2 w-full"
+                        className="cursor-pointer bg-[#9d3358] text-white hover:bg-[#7d2645] mt-2 w-full transition-colors"
                     >
                         {loading ? "Registrando..." : "Registrar"}
                     </Button>

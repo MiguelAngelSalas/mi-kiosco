@@ -1,61 +1,55 @@
 "use client"
+
 import { Heading, Table, Button, Card, Text, Flex, TextField } from "@radix-ui/themes"
 import { MagnifyingGlassIcon, TrashIcon } from "@radix-ui/react-icons"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import EditProductModal, { Categoria } from "./EditProductModal" 
-import AddProductModal from "@/app/components/AddProductModal"
+import AddProductModal, { Product } from "@/app/components/AddProductModal"
 import AddCategoryModal from "@/app/components/AddCategoryModal" 
-import { deleteProductAction } from "../admin/actions"
 
-interface Products {
-    id_producto: string
-    nombre: string
-    id_categoria: string
-    precio_venta: number
-    stock: number
-    costo: number
-}
+// Datos mock iniciales para desarrollo local mientras el backend implementa los endpoints
+const DEFAULT_CATEGORIAS: Categoria[] = [
+    { id_categoria: "1", nombre_categoria: "Golosinas" },
+    { id_categoria: "2", nombre_categoria: "Bebidas" },
+    { id_categoria: "3", nombre_categoria: "Cigarrillos" },
+    { id_categoria: "4", nombre_categoria: "Almacén" },
+]
+
+const DEFAULT_PRODUCTOS: Product[] = [
+    { id_producto: "1", nombre: "Alfajor Guaymallén Chocolate", id_categoria: "1", precio_venta: 450, costo: 280, stock: 120 },
+    { id_producto: "2", nombre: "Coca Cola 500ml", id_categoria: "2", precio_venta: 1200, costo: 750, stock: 45 },
+    { id_producto: "3", nombre: "Caramelos Sugus x bolsa", id_categoria: "1", precio_venta: 850, costo: 500, stock: 15 },
+    { id_producto: "4", nombre: "Agua Mineral 500ml", id_categoria: "2", precio_venta: 900, costo: 520, stock: 80 },
+]
 
 interface AdminPanelProps {
-    initialProducts: Products[]
-    initialCategorias: Categoria[] 
+    initialProducts?: Product[]
+    initialCategorias?: Categoria[] 
 }
 
-export default function AdminPanel({ initialProducts = [], initialCategorias = [] }: AdminPanelProps) {
+export default function AdminPanel({ 
+    initialProducts = DEFAULT_PRODUCTOS, 
+    initialCategorias = DEFAULT_CATEGORIAS 
+}: AdminPanelProps) {
     const router = useRouter()
     const [isAuthorized, setIsAuthorized] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
-    const [productos, setProductos] = useState<Products[]>(initialProducts || [])
     
-    const [categorias, setCategorias] = useState<Categoria[]>(initialCategorias || [])
+    // Si llegan props vacías, usamos los defaults mock
+    const [productos, setProductos] = useState<Product[]>(
+        initialProducts.length > 0 ? initialProducts : DEFAULT_PRODUCTOS
+    )
+    const [categorias, setCategorias] = useState<Categoria[]>(
+        initialCategorias.length > 0 ? initialCategorias : DEFAULT_CATEGORIAS
+    )
     
-    const [editingProduct, setEditingProduct] = useState<Products | null>(null)
-    const [editForm, setEditForm] = useState({ name: "", priceSell: 0, cost: 0, stock: 0 })
-    
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null)
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [isCategoryOpen, setIsCategoryOpen] = useState(false)
 
-    const productosFiltrados = productos.filter((item) => {
-        const query = searchTerm.toLowerCase().trim()
-        if (!query) return true 
-        
-        const nombre = (item.nombre || "").toLowerCase()
-        const codigo = String(item.id_producto || "").padStart(4, '0').toLowerCase()
-        return nombre.includes(query) || codigo.includes(query)
-    })
-
-    const handleOpenEdit = (item: Products) => {
-        setEditingProduct(item)
-        setEditForm({
-            name: item.nombre,
-            priceSell: item.precio_venta,
-            cost: item.costo,
-            stock: item.stock
-        })
-    }
-
+    // Control de sesión por rol
     useEffect(() => {
         const storedRole = localStorage.getItem("rolUsuario")
 
@@ -66,6 +60,26 @@ export default function AdminPanel({ initialProducts = [], initialCategorias = [
             setIsAuthorized(true)
         }
     }, [router])
+
+    const productosFiltrados = productos.filter((item) => {
+        const query = searchTerm.toLowerCase().trim()
+        if (!query) return true 
+        
+        const nombre = (item.nombre || "").toLowerCase()
+        const codigo = String(item.id_producto || "").padStart(4, "0").toLowerCase()
+        return nombre.includes(query) || codigo.includes(query)
+    })
+
+    const handleOpenEdit = (item: Product) => {
+        setEditingProduct(item)
+    }
+
+    const handleDeleteProduct = (id: string, nombre: string) => {
+        if (window.confirm(`¿Estás seguro que querés borrar el producto "${nombre}"?`)) {
+            setProductos(prev => prev.filter(p => p.id_producto !== id))
+            toast.success(`Producto "${nombre}" eliminado`)
+        }
+    }
 
     if (!isAuthorized) {
         return null 
@@ -84,23 +98,25 @@ export default function AdminPanel({ initialProducts = [], initialCategorias = [
                         className="cursor-pointer transition-all duration-200 hover:scale-105 bg-[#33589c] text-white hover:bg-[#28467b]"
                         onClick={() => router.push("/CheckoutMenu")}
                     >
-                        Go to POS (Checkout)
+                        Ir al Mostrador (POS)
                     </Button>
                     <Button 
                         variant="solid" 
                         className="cursor-pointer transition-all duration-200 hover:scale-105 bg-[#9d3358] text-white hover:bg-[#7d2645]"
                         onClick={() => {
                             localStorage.removeItem("rolUsuario")
+                            localStorage.removeItem("token")
                             toast.success("Sesión cerrada")
                             router.push("/login")
                         }}
                     >
-                        Logout
+                        Cerrar Sesión
                     </Button>
                 </div>
             </div>
 
-            <Flex direction={"row"} gap={"6"} align="center">
+            {/* Barra de Filtro y Acciones */}
+            <Flex direction="row" gap="4" align="center">
                 <div className="relative w-full max-w-sm">
                     <TextField.Root 
                         placeholder="Filtrar por nombre o ID..." 
@@ -114,34 +130,50 @@ export default function AdminPanel({ initialProducts = [], initialCategorias = [
                         </TextField.Slot>    
                     </TextField.Root>
                 </div>
-                <Button onClick={() => setIsAddOpen(true)} className="cursor-pointer bg-[#33589c] text-white hover:bg-[#28467b]">Agregar producto</Button>
-                <Button className="cursor-pointer bg-[#33589c] text-white hover:bg-[#28467b]">Cajas diarias</Button>
+                <Button 
+                    onClick={() => setIsAddOpen(true)} 
+                    className="cursor-pointer bg-[#33589c] text-white hover:bg-[#28467b]"
+                >
+                    + Agregar producto
+                </Button>
+                <Button 
+                    variant="soft"
+                    onClick={() => toast("Sección de Cajas en desarrollo", { icon: "ℹ️" })}
+                    className="cursor-pointer bg-[#33589c]/10 text-[#33589c] dark:text-blue-300 hover:bg-[#33589c]/20"
+                >
+                    Cajas diarias
+                </Button>
             </Flex>
 
-            {/* Main Content Area */}
+            {/* Tabla de Productos */}
             <Card className="grow border-2 border-[#33589c] rounded-lg bg-white dark:bg-gray-800 p-5 shadow-md overflow-hidden flex flex-col">
                 <div className="flex flex-col gap-4 h-full overflow-hidden">
-                    <Heading size="4" className="text-[#9d3358] dark:text-[#d14476]">
-                        Product & Price Management
-                    </Heading>
+                    <Flex justify="between" align="center">
+                        <Heading size="4" className="text-[#9d3358] dark:text-[#d14476]">
+                            Gestión de Productos e Inventario
+                        </Heading>
+                        <Text size="2" className="text-gray-500 dark:text-gray-400">
+                            Total: {productosFiltrados.length} productos
+                        </Text>
+                    </Flex>
                     
                     <div className="overflow-y-auto grow border border-[#33589c] rounded-lg">
                         <Table.Root variant="surface" className="w-full">
                             <Table.Header className="bg-[#33589c] sticky top-0 z-10">
                                 <Table.Row>
                                     <Table.ColumnHeaderCell className="text-white w-24">ID</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell className="text-white">Product</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell justify="end" className="text-white">Cost</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell justify="end" className="text-white">Sale Price</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell className="text-white">Producto</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell justify="end" className="text-white">Costo</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell justify="end" className="text-white">Precio Venta</Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell justify="center" className="text-white">Stock</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell justify="center" className="text-white">Actions</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell justify="center" className="text-white">Acciones</Table.ColumnHeaderCell>
                                 </Table.Row>
                             </Table.Header>
 
                             <Table.Body>
                                 {productosFiltrados.length === 0 ? (
                                     <Table.Row>
-                                        <Table.Cell colSpan={6} justify="center" className="py-8 text-gray-500">
+                                        <Table.Cell colSpan={6} justify="center" className="py-8 text-gray-500 text-center">
                                             No se encontraron productos con "{searchTerm}"
                                         </Table.Cell>
                                     </Table.Row>
@@ -149,10 +181,14 @@ export default function AdminPanel({ initialProducts = [], initialCategorias = [
                                     productosFiltrados.map((item) => (
                                         <Table.Row key={item.id_producto} align="center" className="border-b border-gray-200 dark:border-gray-700">
                                             <Table.Cell className="text-gray-500 dark:text-gray-400 font-mono text-sm">
-                                                {String(item.id_producto).padStart(4, '0')}
+                                                {String(item.id_producto).padStart(4, "0")}
                                             </Table.Cell>
-                                            <Table.RowHeaderCell className="font-medium dark:text-gray-200">{item.nombre}</Table.RowHeaderCell>
-                                            <Table.Cell justify="end" className="dark:text-gray-300">${item.costo}</Table.Cell>
+                                            <Table.RowHeaderCell className="font-medium dark:text-gray-200">
+                                                {item.nombre}
+                                            </Table.RowHeaderCell>
+                                            <Table.Cell justify="end" className="dark:text-gray-300">
+                                                ${item.costo}
+                                            </Table.Cell>
                                             <Table.Cell justify="end">
                                                 <Text weight="bold" style={{ color: "#589c33", fontSize: "1.1rem" }}>
                                                     ${item.precio_venta}
@@ -171,22 +207,12 @@ export default function AdminPanel({ initialProducts = [], initialCategorias = [
                                                         onClick={() => handleOpenEdit(item)}
                                                         className="cursor-pointer border border-[#33589c] text-[#33589c] dark:text-white dark:border-blue-400 hover:bg-[#33589c] hover:text-white"
                                                     >
-                                                        Edit
+                                                        Editar
                                                     </Button>
                                                     <Button 
                                                         size="1" 
                                                         variant="outline" 
-                                                        onClick={async () => {
-                                                            if (window.confirm(`¿Estás seguro que querés borrar el producto "${item.nombre}" definitivamente?`)) {
-                                                                try {
-                                                                    await deleteProductAction(item.id_producto)
-                                                                    setProductos(productos.filter(p => p.id_producto !== item.id_producto))
-                                                                    toast.success(`Producto "${item.nombre}" eliminado`)
-                                                                } catch (error) {
-                                                                    toast.error("Hubo un error al borrar el producto")
-                                                                }
-                                                            }
-                                                        }}
+                                                        onClick={() => handleDeleteProduct(item.id_producto, item.nombre)}
                                                         className="cursor-pointer border border-[#9d3358] text-[#9d3358] dark:text-white hover:bg-[#9d3358] hover:text-white"
                                                     >
                                                         <TrashIcon />
@@ -198,39 +224,40 @@ export default function AdminPanel({ initialProducts = [], initialCategorias = [
                                 )}
                             </Table.Body>
                         </Table.Root>
-                        
                     </div>
                 </div>
             </Card>
 
+            {/* Modal de Edición */}
             <EditProductModal 
                 product={editingProduct} 
-                categoria={categorias} // Corregido: antes decía "categoria"
+                categoria={categorias}
                 onClose={() => setEditingProduct(null)}
                 onSuccess={(updated) => {
-                    setProductos(productos.map(p => p.id_producto === updated.id_producto ? updated : p))
+                    setProductos(prev => prev.map(p => p.id_producto === updated.id_producto ? updated : p))
+                    setEditingProduct(null)
                     toast.success("Producto actualizado")
                 }}
             />
             
+            {/* Modal de Agregar Producto */}
             <AddProductModal 
                 isOpen={isAddOpen}
                 onClose={() => setIsAddOpen(false)}
                 categorias={categorias} 
                 onSuccess={(newProduct) => {
-                    setProductos([newProduct, ...productos])
-                    toast.success("Producto creado exitosamente")
+                    setProductos(prev => [newProduct, ...prev])
                 }}
                 onOpenCategoryModal={() => setIsCategoryOpen(true)} 
             />
 
+            {/* Modal de Agregar Categoría */}
             <AddCategoryModal 
                 isOpen={isCategoryOpen}
                 onClose={() => setIsCategoryOpen(false)}
                 onSuccess={(nuevaCategoria) => {
+                    setCategorias(prev => [...prev, nuevaCategoria])
                     setIsCategoryOpen(false)
-                    setCategorias([...categorias, nuevaCategoria])
-                    toast.success("Categoría agregada correctamente")
                 }}
             />
         </div>
