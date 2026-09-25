@@ -1,6 +1,6 @@
 "use client"
 import { Dialog, Button, Flex, TextField, Text } from "@radix-ui/themes"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import toast from "react-hot-toast"
 
 interface AbrirCajaProps {
@@ -11,6 +11,12 @@ interface AbrirCajaProps {
 export default function AbrirCajaModal({ onCajaAbierta }: AbrirCajaProps) {
     const [monto, setMonto] = useState("")
     const [loading, setLoading] = useState(false)
+    const [mounted, setMounted] = useState(false)
+
+    // Evita el error de hidratación en Next.js
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     const handleAbrir = () => {
         const montoNum = Number(monto)
@@ -21,16 +27,17 @@ export default function AbrirCajaModal({ onCajaAbierta }: AbrirCajaProps) {
 
         setLoading(true)
         
-        // Simulamos un breve tiempo de carga
         setTimeout(() => {
             toast.success(`Caja abierta con $${montoNum}`)
-            onCajaAbierta(Date.now()) // Generamos un ID local temporal
+            onCajaAbierta(Date.now())
             setLoading(false)
         }, 500)
     }
 
+    if (!mounted) return null
+
     return (
-        <Dialog.Root open={true}>
+        <Dialog.Root open={true} onOpenChange={() => {}}>
             <Dialog.Content style={{ maxWidth: 400 }} className="bg-white dark:bg-gray-800 border-2 border-[#33589c]">
                 <Dialog.Title className="text-[#33589c] dark:text-white">
                     Abrir Turno / Caja
