@@ -6,14 +6,23 @@ import { registerUserAction } from "../admin/actions"
 import Link from "next/link"
 import { useState } from "react"
 import toast from "react-hot-toast"
+import { LinkButton } from "@/app/components/ui/LinkButton"
 
 export default function CreateUserPage() {
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+    const [rolSeleccionado, setRolSeleccionado] = useState("1") // Por defecto Administrador
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
         setErrorMsg(null)
+
+        // Validación exclusiva para el MVP de la facultad
+        if (rolSeleccionado === "0") {
+            toast.error("¡No podés crear una cuenta como cajero desde acá!")
+            return
+        }
+
         setLoading(true)
 
         const form = e.currentTarget
@@ -29,10 +38,10 @@ export default function CreateUserPage() {
                 return
             }
 
-            toast.success("Usuario creado exitosamente")
+            toast.success("Usuario administrador creado exitosamente")
         } catch (err: any) {
             if (err?.message === "NEXT_REDIRECT" || err?.digest?.startsWith("NEXT_REDIRECT")) {
-                toast.success("Usuario creado exitosamente")
+                toast.success("Usuario administrador creado exitosamente")
                 throw err
             }
 
@@ -45,9 +54,20 @@ export default function CreateUserPage() {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-6 transition-colors duration-300">
+            
+            <LinkButton 
+                href="/landingPage" 
+                size="6" 
+                weight="bold" 
+                colorTheme="blue"
+                className="mb-6"
+            >
+                My Kiosco
+            </LinkButton>
+
             <Card className="w-full max-w-md border-2 border-[#33589c] bg-white dark:bg-gray-800 p-8 shadow-xl rounded-lg">
                 <Heading size="6" className="text-[#33589c] dark:text-white mb-6 text-center">
-                    Crear Nuevo Usuario
+                    Registrar Kiosco (Admin)
                 </Heading>
 
                 {errorMsg && (
@@ -62,7 +82,7 @@ export default function CreateUserPage() {
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div>
                         <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
-                            Nombre de Usuario
+                            Nombre de Usuario (Admin)
                         </Text>
                         <TextField.Root 
                             name="nombre" 
@@ -93,11 +113,13 @@ export default function CreateUserPage() {
                         </Text>
                         <select 
                             name="rol"
+                            value={rolSeleccionado}
+                            onChange={(e) => setRolSeleccionado(e.target.value)}
                             disabled={loading}
                             className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-[#33589c] text-sm disabled:opacity-50"
                         >
-                            <option value="0">Cajero (0)</option>
-                            <option value="1">Administrador (1)</option>
+                            <option value="0">Cajero</option>
+                            <option value="1">Administrador</option>
                         </select>
                     </div>
 

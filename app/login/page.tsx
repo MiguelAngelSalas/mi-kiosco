@@ -3,56 +3,26 @@ import { TextField, Button, Flex, Card, Heading, Callout } from "@radix-ui/theme
 import { InfoCircledIcon } from "@radix-ui/react-icons"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
-import toast from "react-hot-toast"
 import { loginUserAction } from "../admin/actions"
-
+import { LinkButton } from "@/app/components/ui/LinkButton" 
+import toast from "react-hot-toast"
+import {useLogin} from "@/app/hooks/useLogin"
 export default function Login() {
-    const [inputUsername, setInputUsername] = useState("")
-    const [inputPassword, setInputPassword] = useState("")
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
-    const [loading, setLoading] = useState(false)
 
-    const router = useRouter()
-
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setErrorMsg(null)
-        setLoading(true)
-
-        const result = await loginUserAction(inputUsername, inputPassword)
-        setLoading(false)
-
-        if (result.error) {
-            setErrorMsg(result.error)
-            toast.error(result.error)
-            return
-        }
-
-        const role = result.role!
-        toast.success(`Bienvenido ${inputUsername}!`)
-
-        // Guardamos rol y token (si existe) para próximas peticiones
-        localStorage.setItem("rolUsuario", role)
-        if (result.token) {
-            localStorage.setItem("token", result.token)
-        }
-
-        if (role === "administrador") {
-            router.push("/AdminPage")
-        } else {
-            router.push("/CheckoutMenu")
-        }
-    }
+    const {handleLogin, errorMsg, loading, inputUsername,setInputUsername,inputPassword, setInputPassword }=useLogin()
 
     return (
         <div className="flex flex-col items-center justify-center gap-4 min-h-screen p-9 transition-colors duration-300 bg-gray-50 dark:bg-gray-900">  
-            <Link 
+            
+            <LinkButton 
                 href="/landingPage" 
-                className="text-xl font-bold flex justify-center mb-6 text-pretty rounded py-4 px-8 shadow-lg transition-all duration-300 hover:scale-105 border-[3px] border-[#33589c] text-[#33589c] dark:text-white bg-white dark:bg-gray-800 hover:bg-[#33589c] hover:text-white dark:hover:bg-[#33589c]"
+                size="6" 
+                weight="bold" 
+                colorTheme="blue"
+                className="mb-2"
             >
                 My Kiosco
-            </Link>
+            </LinkButton>
 
             <Card className="w-80 p-8 transition-all duration-300 hover:shadow-xl border-2 border-[#33589c] bg-white dark:bg-gray-800">
                 <form onSubmit={handleLogin}>
@@ -103,12 +73,6 @@ export default function Login() {
                         >
                             {loading ? "Entrando..." : "Enter"}
                         </Button>
-
-                        <div className="text-center mt-2">
-                            <Link href="/createUser" className="text-xs text-[#33589c] dark:text-blue-400 hover:underline">
-                                ¿No tenés cuenta? Registrate
-                            </Link>
-                        </div>
                     </Flex>
                 </form>
             </Card>
