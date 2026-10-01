@@ -7,58 +7,73 @@ import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import EditProductModal, { Categoria } from "./EditProductModal" 
 import AddProductModal, { Product } from "@/app/components/AddProductModal"
-import AddCategoryModal from "@/app/components/AddCategoryModal" 
+import AddCategoryModal from "@/app/components/AddCategoryModal"
+import CreateUserModal from "./CreateUserModal" 
+import { deleteProductAction,getProductsAction, getCategoriesAction } from "../admin/actions" // Ajustá la ruta!
 
-// Datos mock iniciales para desarrollo local mientras el backend implementa los endpoints
-const DEFAULT_CATEGORIAS: Categoria[] = [
-    { id_categoria: "1", nombre_categoria: "Golosinas" },
-    { id_categoria: "2", nombre_categoria: "Bebidas" },
-    { id_categoria: "3", nombre_categoria: "Cigarrillos" },
-    { id_categoria: "4", nombre_categoria: "Almacén" },
-]
-
-const DEFAULT_PRODUCTOS: Product[] = [
-    { id_producto: "1", nombre: "Alfajor Guaymallén Chocolate", id_categoria: "1", precio_venta: 450, costo: 280, stock: 120 },
-    { id_producto: "2", nombre: "Coca Cola 500ml", id_categoria: "2", precio_venta: 1200, costo: 750, stock: 45 },
-    { id_producto: "3", nombre: "Caramelos Sugus x bolsa", id_categoria: "1", precio_venta: 850, costo: 500, stock: 15 },
-    { id_producto: "4", nombre: "Agua Mineral 500ml", id_categoria: "2", precio_venta: 900, costo: 520, stock: 80 },
-]
-
-interface AdminPanelProps {
-    initialProducts?: Product[]
-    initialCategorias?: Categoria[] 
-}
-
-export default function AdminPanel({ 
-    initialProducts = DEFAULT_PRODUCTOS, 
-    initialCategorias = DEFAULT_CATEGORIAS 
-}: AdminPanelProps) {
+export default function AdminPanel() {
     const router = useRouter()
     const [isAuthorized, setIsAuthorized] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
+    const [loadingData, setLoadingData] = useState(true) // Nuevo estado para la carga inicial
     
-    // Si llegan props vacías, usamos los defaults mock
-    const [productos, setProductos] = useState<Product[]>(
-        initialProducts.length > 0 ? initialProducts : DEFAULT_PRODUCTOS
-    )
-    const [categorias, setCategorias] = useState<Categoria[]>(
-        initialCategorias.length > 0 ? initialCategorias : DEFAULT_CATEGORIAS
-    )
+    const [productos, setProductos] = useState<Product[]>([])
+    const [categorias, setCategorias] = useState<Categoria[]>([])
     
     const [editingProduct, setEditingProduct] = useState<Product | null>(null)
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [isCategoryOpen, setIsCategoryOpen] = useState(false)
 
-    // Control de sesión por rol
+    // Control de sesión y carga de datos reales
     useEffect(() => {
         const storedRole = localStorage.getItem("rolUsuario")
 
         if (!storedRole || storedRole !== "administrador") {
             toast.error("Acceso denegado. Solo administradores.")
             router.push("/login") 
-        } else {
-            setIsAuthorized(true)
+            return
+        } 
+        
+        setIsAuthorized(true)
+
+        // Función para ir a buscar los datos a Render apenas entramos
+        const fetchRealData = async () => {
+            setLoadingData(true)
+            
+            // Hacemos las dos peticiones en paralelo para que sea más rápido
+            const [prodRes, catRes] = await Promise.all([
+                getProductsAction(),
+                getCategoriesAction()
+            ])
+
+            if (prodRes.success && prodRes.data) {
+                // Mapeamos lo que manda Agus a la estructura de tu Frontend
+                const productosAdaptados: Product[] = prodRes.data.map((p: any) => ({
+                    id_producto: p.id, // o p.productoId, fijate cómo le llama Agus al ID
+                    nombre: p.nombre,
+                    codigo_barras: p.codigoBarras,
+                    precio_venta: p.precioVenta,
+                    costo: p.precioCosto,
+                    stock: p.stock,
+                    id_categoria: p.categoriaId
+                }))
+                setProductos(productosAdaptados)
+            } else {
+                toast.error("No se pudieron cargar los productos")
+            }
+
+            if (catRes.success && catRes.data) {
+                const categoriasAdaptadas: Categoria[] = catRes.data.map((c: any) => ({
+                    id_categoria: c.id, // o c.categoriaId
+                    nombre_categoria: c.nombre
+                }))
+                setCategorias(categoriasAdaptadas)
+            }
+
+            setLoadingData(false)
         }
+
+        fetchRealData()
     }, [router])
 
     const productosFiltrados = productos.filter((item) => {
@@ -74,13 +89,29 @@ export default function AdminPanel({
         setEditingProduct(item)
     }
 
-    const handleDeleteProduct = (id: string, nombre: string) => {
+    const handleDeleteProduct = async (id: string | number, nombre: string) => {
         if (window.confirm(`¿Estás seguro que querés borrar el producto "${nombre}"?`)) {
-            setProductos(prev => prev.filter(p => p.id_producto !== id))
-            toast.success(`Producto "${nombre}" eliminado`)
+            
+            // Ponemos un toast de carga porque borrar en BD puede tardar medio segundo
+            const toastId = toast.loading("Eliminando producto...")
+
+            try {
+                const respuesta = await deleteProductAction(id)
+
+                if (respuesta?.error) {
+                    toast.error(respuesta.error, { id: toastId })
+                    return
+                }
+
+                // Si salió todo bien, lo sacamos de la tabla
+                setProductos(prev => prev.filter(p => p.id_producto !== id))
+                toast.success(`Producto "${nombre}" eliminado`, { id: toastId })
+
+            } catch (err) {
+                toast.error("Ocurrió un error al eliminar", { id: toastId })
+            }
         }
     }
-
     if (!isAuthorized) {
         return null 
     }
@@ -105,7 +136,6 @@ export default function AdminPanel({
                         className="cursor-pointer transition-all duration-200 hover:scale-105 bg-[#9d3358] text-white hover:bg-[#7d2645]"
                         onClick={() => {
                             localStorage.removeItem("rolUsuario")
-                            localStorage.removeItem("token")
                             toast.success("Sesión cerrada")
                             router.push("/login")
                         }}
@@ -130,12 +160,16 @@ export default function AdminPanel({
                         </TextField.Slot>    
                     </TextField.Root>
                 </div>
+                
                 <Button 
                     onClick={() => setIsAddOpen(true)} 
                     className="cursor-pointer bg-[#33589c] text-white hover:bg-[#28467b]"
                 >
                     + Agregar producto
                 </Button>
+
+                <CreateUserModal />
+
                 <Button 
                     variant="soft"
                     onClick={() => toast("Sección de Cajas en desarrollo", { icon: "ℹ️" })}
@@ -157,7 +191,7 @@ export default function AdminPanel({
                         </Text>
                     </Flex>
                     
-                    <div className="overflow-y-auto grow border border-[#33589c] rounded-lg">
+                    <div className="overflow-y-auto grow border border-[#33589c] rounded-lg relative">
                         <Table.Root variant="surface" className="w-full">
                             <Table.Header className="bg-[#33589c] sticky top-0 z-10">
                                 <Table.Row>
@@ -171,10 +205,16 @@ export default function AdminPanel({
                             </Table.Header>
 
                             <Table.Body>
-                                {productosFiltrados.length === 0 ? (
+                                {loadingData ? (
+                                    <Table.Row>
+                                        <Table.Cell colSpan={6} justify="center" className="py-12 text-[#33589c] font-bold text-center">
+                                            Cargando inventario desde el servidor...
+                                        </Table.Cell>
+                                    </Table.Row>
+                                ) : productosFiltrados.length === 0 ? (
                                     <Table.Row>
                                         <Table.Cell colSpan={6} justify="center" className="py-8 text-gray-500 text-center">
-                                            No se encontraron productos con "{searchTerm}"
+                                            No se encontraron productos
                                         </Table.Cell>
                                     </Table.Row>
                                 ) : (
@@ -228,7 +268,6 @@ export default function AdminPanel({
                 </div>
             </Card>
 
-            {/* Modal de Edición */}
             <EditProductModal 
                 product={editingProduct} 
                 categoria={categorias}
@@ -240,7 +279,6 @@ export default function AdminPanel({
                 }}
             />
             
-            {/* Modal de Agregar Producto */}
             <AddProductModal 
                 isOpen={isAddOpen}
                 onClose={() => setIsAddOpen(false)}
@@ -251,7 +289,6 @@ export default function AdminPanel({
                 onOpenCategoryModal={() => setIsCategoryOpen(true)} 
             />
 
-            {/* Modal de Agregar Categoría */}
             <AddCategoryModal 
                 isOpen={isCategoryOpen}
                 onClose={() => setIsCategoryOpen(false)}

@@ -2,6 +2,7 @@
 import { Heading, Button, Card, Flex, TextField, Text } from "@radix-ui/themes"
 import { useState } from "react"
 import toast from "react-hot-toast"
+import { createCategoryAction } from "../admin/actions" // Ajustá esta ruta según dónde esté tu archivo
 
 export interface Categoria {
     id_categoria: string | number
@@ -16,10 +17,12 @@ interface AddCategoryModalProps {
 
 export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCategoryModalProps) {
     const [nombreCategoria, setNombreCategoria] = useState("")
+    const [loading, setLoading] = useState(false)
 
     if (!isOpen) return null
 
-    const handleSave = () => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
         const nombreLimpio = nombreCategoria.trim()
 
         if (!nombreLimpio) {
@@ -27,15 +30,37 @@ export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCate
             return
         }
 
-        // Creamos la categoría localmente sin llamar al backend
-        onSuccess({
-            id_categoria: Date.now(), 
-            nombre_categoria: nombreLimpio
-        })
-        
-        toast.success("Categoría agregada")
-        setNombreCategoria("")
-        onClose()
+        setLoading(true)
+
+        // Armamos el FormData a mano porque estamos usando un estado controlado
+        const formData = new FormData()
+        formData.append("nombre", nombreLimpio)
+
+        try {
+            const respuesta = await createCategoryAction(formData)
+
+            if (respuesta?.error) {
+                toast.error(respuesta.error)
+                setLoading(false)
+                return
+            }
+
+            toast.success("Categoría agregada en el servidor")
+            
+            // Le pasamos al componente padre la categoría (idealmente con el ID real que nos devolvió Agus)
+            onSuccess({
+                id_categoria: respuesta.data?.id || respuesta.data?.id_categoria || Date.now(), // Fallback si no devuelve ID
+                nombre_categoria: respuesta.data?.nombre || nombreLimpio
+            })
+            
+            setNombreCategoria("")
+            setLoading(false)
+            onClose()
+
+        } catch (err) {
+            toast.error("Error inesperado al guardar la categoría")
+            setLoading(false)
+        }
     }
 
     return (
@@ -45,44 +70,46 @@ export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCate
                     Agregar Nueva Categoría
                 </Heading>
                 
-                <div className="flex flex-col gap-4">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div>
                         <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
                             Nombre de la Categoría
                         </Text>
                         <TextField.Root 
+                            name="nombre"
                             size="3"
                             placeholder="Ej: Almacén, Bebidas, etc."
                             value={nombreCategoria} 
                             onChange={(e) => setNombreCategoria(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    e.preventDefault()
-                                    handleSave()
-                                }
-                            }}
+                            disabled={loading}
                         />
                     </div>
                     
                     <Flex justify="end" gap="3" mt="4">
                         <Button 
+                            type="button"
                             variant="soft" 
                             color="gray" 
                             size="3"
-                            onClick={onClose} 
+                            onClick={() => {
+                                setNombreCategoria("")
+                                onClose()
+                            }} 
+                            disabled={loading}
                             className="cursor-pointer"
                         >
                             Cancelar
                         </Button>
                         <Button 
+                            type="submit"
                             size="3"
+                            disabled={loading}
                             className="cursor-pointer bg-[#33589c] text-white hover:bg-[#28467b]" 
-                            onClick={handleSave}
                         >
-                            Guardar
+                            {loading ? "Guardando..." : "Guardar"}
                         </Button>
                     </Flex>
-                </div>
+                </form>
             </Card>
         </div>
     )
