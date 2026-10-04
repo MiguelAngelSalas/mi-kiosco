@@ -3,8 +3,7 @@ import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { getProductsAction, getCategoriesAction, deleteProductAction } from "../admin/actions" 
 
-// Asegurate de importar las interfaces correctamente
-import { Product } from "@/app/components/AddProductModal" 
+import { Product } from "./useAddProduct" 
 import { Categoria } from "../components/EditProductModal" 
 
 export function useAdminData() {
