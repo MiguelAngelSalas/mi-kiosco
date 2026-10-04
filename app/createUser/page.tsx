@@ -2,56 +2,16 @@
 
 import { Heading, Card, Button, Flex, Text, TextField, Callout } from "@radix-ui/themes"
 import { InfoCircledIcon } from "@radix-ui/react-icons"
-import { registerUserAction } from "../admin/actions"
 import Link from "next/link"
-import { useState } from "react"
-import toast from "react-hot-toast"
 import { LinkButton } from "@/app/components/ui/LinkButton"
+import { useRegisterAdmin } from "../hooks/useRegisterAdmin"
 
 export default function CreateUserPage() {
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
-    const [loading, setLoading] = useState(false)
-    const [rolSeleccionado, setRolSeleccionado] = useState("1") // Por defecto Administrador
-
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
-        setErrorMsg(null)
-
-        // Validación exclusiva para el MVP de la facultad
-        if (rolSeleccionado === "0") {
-            toast.error("¡No podés crear una cuenta como cajero desde acá!")
-            return
-        }
-
-        setLoading(true)
-
-        const form = e.currentTarget
-        const formData = new FormData(form)
-
-        try {
-            const respuesta = await registerUserAction(formData)
-
-            if (respuesta?.error) {
-                setErrorMsg(respuesta.error)
-                toast.error(respuesta.error)
-                setLoading(false)
-                return
-            }
-
-            toast.success("Usuario administrador creado exitosamente")
-        } catch (err: any) {
-            if (err?.message === "NEXT_REDIRECT" || err?.digest?.startsWith("NEXT_REDIRECT")) {
-                toast.success("Usuario administrador creado exitosamente")
-                throw err
-            }
-
-            const errorMessage = err?.message || "Ocurrió un error inesperado al registrar"
-            setErrorMsg(errorMessage)
-            toast.error(errorMessage)
-            setLoading(false)
-        }
-    }
-
+    const {errorMsg,
+        loading,
+        rolSeleccionado,
+        setRolSeleccionado,
+        handleSubmit} = useRegisterAdmin()
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-6 transition-colors duration-300">
             
@@ -141,4 +101,4 @@ export default function CreateUserPage() {
             </Card>
         </div>
     )
-}
+}   

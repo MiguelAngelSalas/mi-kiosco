@@ -1,13 +1,7 @@
 "use client"
-import { Heading, Button, Card, Flex, TextField, Text } from "@radix-ui/themes"
-import { useState } from "react"
-import toast from "react-hot-toast"
-import { createCategoryAction } from "../admin/actions" // Ajustá esta ruta según dónde esté tu archivo
-
-export interface Categoria {
-    id_categoria: string | number
-    nombre_categoria: string
-}
+import { Heading, Button, Card, Flex, TextField, Text, IconButton } from "@radix-ui/themes"
+import { FolderPlus, X, Save, Loader2 } from "lucide-react"
+import { useAddCategory, Categoria } from "@/app/hooks/useAddCategory" // Ajustá la ruta
 
 interface AddCategoryModalProps {
     isOpen: boolean
@@ -16,99 +10,84 @@ interface AddCategoryModalProps {
 }
 
 export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCategoryModalProps) {
-    const [nombreCategoria, setNombreCategoria] = useState("")
-    const [loading, setLoading] = useState(false)
+    // 👇 Llamamos al Hook
+    const { 
+        nombreCategoria, 
+        setNombreCategoria, 
+        loading, 
+        handleClose, 
+        handleSubmit 
+    } = useAddCategory(onClose, onSuccess)
 
     if (!isOpen) return null
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        const nombreLimpio = nombreCategoria.trim()
-
-        if (!nombreLimpio) {
-            toast.error("El nombre de la categoría es obligatorio")
-            return
-        }
-
-        setLoading(true)
-
-        // Armamos el FormData a mano porque estamos usando un estado controlado
-        const formData = new FormData()
-        formData.append("nombre", nombreLimpio)
-
-        try {
-            const respuesta = await createCategoryAction(formData)
-
-            if (respuesta?.error) {
-                toast.error(respuesta.error)
-                setLoading(false)
-                return
-            }
-
-            toast.success("Categoría agregada en el servidor")
-            
-            // Le pasamos al componente padre la categoría (idealmente con el ID real que nos devolvió Agus)
-            onSuccess({
-                id_categoria: respuesta.data?.id || respuesta.data?.id_categoria || Date.now(), // Fallback si no devuelve ID
-                nombre_categoria: respuesta.data?.nombre || nombreLimpio
-            })
-            
-            setNombreCategoria("")
-            setLoading(false)
-            onClose()
-
-        } catch (err) {
-            toast.error("Error inesperado al guardar la categoría")
-            setLoading(false)
-        }
-    }
-
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-            <Card className="w-full max-w-sm bg-white dark:bg-gray-800 p-6 border-2 border-[#33589c] shadow-xl">
-                <Heading size="4" className="text-[#33589c] dark:text-white mb-4">
-                    Agregar Nueva Categoría
-                </Heading>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4 transition-all duration-300">
+            <Card className="w-full max-w-sm bg-white dark:bg-gray-900 p-0 border border-gray-300 dark:border-gray-700 shadow-2xl rounded-2xl flex flex-col overflow-hidden">
                 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <div>
-                        <Text as="label" size="2" weight="medium" className="text-gray-700 dark:text-gray-300 mb-1 block">
-                            Nombre de la Categoría
+                {/* --- HEADER DEL MODAL --- */}
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
+                    <Flex align="center" gap="2">
+                        <FolderPlus className="text-[#33589c]" size={22} />
+                        <Heading size="4" className="text-gray-900 dark:text-white font-bold">
+                            Nueva Categoría
+                        </Heading>
+                    </Flex>
+                    <IconButton 
+                        type="button"
+                        variant="ghost" 
+                        color="gray" 
+                        onClick={handleClose} 
+                        disabled={loading}
+                        className="cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
+                    >
+                        <X size={20} />
+                    </IconButton>
+                </div>
+                
+                <form onSubmit={handleSubmit} className="flex flex-col">
+                    {/* --- CUERPO DEL MODAL --- */}
+                    <div className="p-6">
+                        <Text as="label" size="2" className="mb-1.5 block text-gray-700 dark:text-gray-300 font-semibold">
+                            Nombre de la Categoría *
                         </Text>
                         <TextField.Root 
                             name="nombre"
                             size="3"
+                            radius="large"
                             placeholder="Ej: Almacén, Bebidas, etc."
                             value={nombreCategoria} 
                             onChange={(e) => setNombreCategoria(e.target.value)}
                             disabled={loading}
+                            autoFocus
+                            className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 shadow-sm focus-within:border-[#33589c]"
                         />
                     </div>
                     
-                    <Flex justify="end" gap="3" mt="4">
+                    {/* --- FOOTER DEL MODAL --- */}
+                    <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
                         <Button 
                             type="button"
                             variant="soft" 
                             color="gray" 
-                            size="3"
-                            onClick={() => {
-                                setNombreCategoria("")
-                                onClose()
-                            }} 
+                            onClick={handleClose} 
                             disabled={loading}
-                            className="cursor-pointer"
+                            className="cursor-pointer bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 shadow-sm"
                         >
                             Cancelar
                         </Button>
                         <Button 
                             type="submit"
-                            size="3"
                             disabled={loading}
-                            className="cursor-pointer bg-[#33589c] text-white hover:bg-[#28467b]" 
+                            className="cursor-pointer bg-[#33589c] text-white hover:bg-[#28467b] shadow-sm" 
                         >
-                            {loading ? "Guardando..." : "Guardar"}
+                            {loading ? (
+                                <><Loader2 size={16} className="animate-spin mr-1" /> Guardando...</>
+                            ) : (
+                                <><Save size={16} className="mr-1" /> Guardar</>
+                            )}
                         </Button>
-                    </Flex>
+                    </div>
                 </form>
             </Card>
         </div>

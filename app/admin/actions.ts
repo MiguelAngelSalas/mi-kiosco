@@ -172,7 +172,8 @@ export async function addProductAction(formData: FormData){
             return {error: data?.message || data?.error || `Error del servidor (${res.status})`}
         }
 
-        return {success : true, productoNuevo: payload} // success corregido
+        return {success : true, productoNuevo: {...payload,
+                id_producto: data?.id_producto || data?.id || data?.data?.id_producto}} // success corregido
     }catch(error){
         return {error: `No se pudo conectar al servidor`}
     }
