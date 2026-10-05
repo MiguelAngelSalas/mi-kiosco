@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation"
 import {cookies} from "next/headers"
 
-const API_URL = process.env.API_RENDER|| "https://metodologias-agiles-proyecto-backend.onrender.com"
+const API_URL = process.env.API_RENDER
 
 export async function registerUserAction(formData: FormData) {
     const nombre = formData.get("nombre")?.toString().trim()

@@ -15,7 +15,11 @@ export interface Product {
 // 🌟 MAGIA TS: Definimos el "contrato" de lo que devuelve el servidor
 interface ActionResponse {
     error?: string;
-    id_producto?: string | number;
+    success?: boolean;
+    id_producto?: string | number; // Lo dejamos intacto por si lo estás usando en otro lado
+    productoNuevo?: {
+        id_producto: string | number;
+    };
 }
 
 export function useAddProduct(onClose: () => void, onSuccess: (newProduct: Product) => void) {
@@ -46,8 +50,7 @@ export function useAddProduct(onClose: () => void, onSuccess: (newProduct: Produ
             toast.success("Producto creado en el servidor")
             
             // Ahora TS sabe perfectamente que id_producto puede existir
-            const idReal = respuesta.id_producto || Date.now().toString()
-
+            const idReal = respuesta.productoNuevo?.id_producto || Date.now().toString()
             onSuccess({
                 id_producto: idReal,
                 nombre: formData.get("nombre") as string,

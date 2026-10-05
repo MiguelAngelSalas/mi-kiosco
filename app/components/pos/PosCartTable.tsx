@@ -27,7 +27,8 @@ export default function PosCartTable({
             <Table.Root className="w-full">
                 <Table.Header className="bg-white dark:bg-gray-900 border-b-2 border-gray-300 dark:border-gray-800">
                     <Table.Row>
-                        <Table.ColumnHeaderCell className="text-gray-600 dark:text-gray-400 font-bold text-sm pl-5 py-4">Producto</Table.ColumnHeaderCell>
+                        <Table.ColumnHeaderCell className="text-gray-600 dark:text-gray-400 font-bold text-sm pl-5 py-4 w-20">ID</Table.ColumnHeaderCell>
+                        <Table.ColumnHeaderCell className="text-gray-600 dark:text-gray-400 font-bold text-sm py-4">Producto</Table.ColumnHeaderCell>
                         <Table.ColumnHeaderCell justify="center" className="text-gray-600 dark:text-gray-400 font-bold text-sm py-4">Cantidad</Table.ColumnHeaderCell>
                         <Table.ColumnHeaderCell justify="end" className="text-gray-600 dark:text-gray-400 font-bold text-sm py-4">Subtotal</Table.ColumnHeaderCell>
                         <Table.ColumnHeaderCell justify="center" className="text-gray-600 dark:text-gray-400 font-bold text-sm pr-5 py-4">Quitar</Table.ColumnHeaderCell>
@@ -36,8 +37,8 @@ export default function PosCartTable({
 
                 <Table.Body>
                     {cart.length === 0 ? (
-                        <Table.Row>
-                            <Table.Cell colSpan={4}>
+                        <Table.Row key="empty">
+                            <Table.Cell colSpan={5}>
                                 <Flex direction="column" align="center" justify="center" className="py-20 text-gray-500">
                                     <div className="bg-gray-100 dark:bg-gray-800/50 p-6 rounded-full mb-4 border border-gray-200 dark:border-transparent">
                                         <Barcode size={48} className="opacity-40 text-gray-500" />
@@ -54,7 +55,12 @@ export default function PosCartTable({
                     ) : (
                         cart.map((item) => (
                             <Table.Row key={item.id_producto} align="center" className="border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                <Table.RowHeaderCell className="font-semibold text-gray-900 dark:text-gray-100 text-base pl-5 py-3">
+                                <Table.Cell className="pl-5">
+                                    <span className="bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded text-gray-600 dark:text-gray-400 font-mono text-xs tracking-wider shadow-sm border border-gray-300 dark:border-transparent">
+                                        {String(item.id_producto).padStart(4, "0")}
+                                    </span>
+                                </Table.Cell>
+                                <Table.RowHeaderCell className="font-semibold text-gray-900 dark:text-gray-100 text-base py-3">
                                     {item.nombre}
                                 </Table.RowHeaderCell>
                                 <Table.Cell justify="center">
