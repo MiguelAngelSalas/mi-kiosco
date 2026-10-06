@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "My Kiosco", // Aproveché y le puse el título real de tu app
+  title: "Mi Kiosco", 
   description: "Punto de venta y administración",
 };
 
