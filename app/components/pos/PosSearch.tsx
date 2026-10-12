@@ -1,6 +1,6 @@
 import { TextField } from "@radix-ui/themes"
 import { Search, Barcode, Loader2 } from "lucide-react"
-import { Product } from "@/app/hooks/useCart"
+import { Product } from "@/app/hooks/useAddProduct"
 import { ChangeEvent, KeyboardEvent, RefObject } from "react"
 
 interface PosSearchProps {

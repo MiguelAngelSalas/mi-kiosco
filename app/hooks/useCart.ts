@@ -1,15 +1,6 @@
 import { useState } from "react"
 import toast from "react-hot-toast"
-
-export interface Product {
-    id_producto: string
-    nombre: string
-    id_categoria: string
-    precio_venta: number
-    stock: number
-    costo: number
-    codigo_barras?: string 
-}
+import {Product} from "./useAddProduct"
 
 export interface CartItem extends Product {
     qty: number
@@ -43,7 +34,7 @@ export function useCart() {
         return true
     }
 
-    const handleIncrement = (id_producto: string) => {
+    const handleIncrement = (id_producto: string | number)  => {
         // 🔥 Validamos estado actual antes de actualizar
         const existingItem = cart.find(item => item.id_producto === id_producto)
         
@@ -57,7 +48,7 @@ export function useCart() {
         ))
     }
 
-    const handleDecrement = (id_producto: string) => {
+    const handleDecrement = (id_producto: string | number) => {
         setCart(prevCart => prevCart.map(item => {
             if (item.id_producto === id_producto && item.qty > 1) {
                 return { ...item, qty: item.qty - 1 }
@@ -66,7 +57,7 @@ export function useCart() {
         }))
     }
 
-    const handleManualQuantity = (id_producto: string, value: string, stock: number) => {
+    const handleManualQuantity = (id_producto: string | number, value: string, stock: number) => {
         const newQty = value === "" ? 0 : parseInt(value, 10)
         
         if (!isNaN(newQty) && newQty >= 0) {
@@ -84,7 +75,7 @@ export function useCart() {
         }
     }
 
-    const handleManualBlur = (id_producto: string) => {
+    const handleManualBlur = (id_producto: string | number) => {
         setCart(prevCart => prevCart.map(item => {
             if (item.id_producto === id_producto && item.qty === 0) {
                 return { ...item, qty: 1 } 
@@ -93,7 +84,7 @@ export function useCart() {
         }))
     }
 
-    const handleRemove = (id_producto: string) => {
+    const handleRemove = (id_producto: string | number) => {
         setCart(prevCart => prevCart.filter(item => item.id_producto !== id_producto))
         toast.success("Producto removido del carrito")
     }

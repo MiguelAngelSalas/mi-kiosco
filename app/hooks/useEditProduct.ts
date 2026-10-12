@@ -1,17 +1,9 @@
 import { useState, useEffect } from "react"
 import toast from "react-hot-toast"
 import { updateProductAction } from "../admin/actions" // Ajustá la ruta si es necesario
-
+import {Product} from "./useAddProduct"
 // Podemos definir la interfaz del producto acá o importarla si la tenés centralizada
-export interface Product {
-    id_producto: string | number
-    nombre: string
-    id_categoria: string | number
-    precio_venta: number
-    stock: number
-    costo: number
-    codigo_barras?: string 
-}
+
 
 export function useEditProduct(product: Product | null, onClose: () => void, onSuccess?: (updated: Product) => void) {
     const [loading, setLoading] = useState(false)

@@ -12,6 +12,8 @@ import AddCategoryModal from "@/app/components/AddCategoryModal"
 import AdminHeader from "@/app/components/admin/AdminHeader"
 import AdminToolbar from "@/app/components/admin/AdminToolbar"
 import AdminTable from "@/app/components/admin/AdminTable"
+// 👇 Importamos el nuevo panel
+import PanelStockBajo from "@/app/components/PanelStockBajo" 
 
 export default function AdminPanel() {
     // 1. Datos gestionados por el hook
@@ -42,6 +44,12 @@ export default function AdminPanel() {
         <div className="flex flex-col gap-6 p-6 min-h-screen bg-gray-100 dark:bg-gray-950 transition-colors duration-300 font-sans">
             
             <AdminHeader />
+
+            {/* 👇 ACÁ AGREGAMOS EL PANEL */}
+            {/* Le pasamos la lista completa de productos original, no la filtrada */}
+            {!loadingData && (
+                <PanelStockBajo productos={productos} umbral={5} />
+            )}
 
             <AdminToolbar 
                 searchTerm={searchTerm} 

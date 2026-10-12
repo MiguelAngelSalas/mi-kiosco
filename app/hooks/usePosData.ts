@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { getProductsAction } from "../admin/actions"
-import { Product } from "./useCart"
+import { Product } from "./useAddProduct"
 
 export function usePosData() {
     const router = useRouter()

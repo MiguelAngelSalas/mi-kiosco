@@ -5,11 +5,11 @@ import { CartItem } from "@/app/hooks/useCart"
 interface PosCartTableProps {
     cart: CartItem[]
     loadingData: boolean
-    handleDecrement: (id: string) => void
-    handleManualQuantity: (id: string, value: string, stock: number) => void
-    handleManualBlur: (id: string) => void
-    handleIncrement: (id: string) => void
-    handleRemove: (id: string) => void
+    handleDecrement: (id: string | number) => void
+    handleManualQuantity: (id: string | number, value: string, stock: number) => void
+    handleManualBlur: (id: string | number) => void
+    handleIncrement: (id: string | number) => void
+    handleRemove: (id: string | number) => void
 }
 
 export default function PosCartTable({ 

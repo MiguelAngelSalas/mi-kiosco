@@ -2,8 +2,8 @@
 import { usePosData } from "@/app/hooks/usePosData"
 import { useCart } from "@/app/hooks/useCart"
 import { usePosSearch } from "@/app/hooks/usePosSearch"
+import { useStockAlert } from "@/app/hooks/useStockAlert" // 👈 Importamos nuestro nuevo hook
 
-// Importamos nuestras 4 piezas visuales
 import PosHeader from "@/app/components/pos/PosHeader"
 import PosSearch from "@/app/components/pos/PosSearch"
 import PosCartTable from "@/app/components/pos/PosCartTable"
@@ -20,19 +20,22 @@ export default function CheckoutMenu() {
         totalItems, itemsParaCheckout 
     } = useCart()
 
-    // 3. Buscador
+    // 3. Alerta Flotante (Lógica aislada)
+    const { 
+        ultimoAgregado, handleAddCartConAlerta, getColorStock 
+    } = useStockAlert(handleAddCart)
+
+    // 4. Buscador
     const {
         searchTerm, selectedIndex, searchContainerRef, productosFiltrados,
         handleSearchChange, handleKeyDown, handleSelectProduct
-    } = usePosSearch(productos, handleAddCart)
+    } = usePosSearch(productos, handleAddCartConAlerta)
 
     return (
-        <div className="flex flex-col gap-6 p-6 min-h-screen bg-gray-100 dark:bg-gray-950 transition-colors duration-300 font-sans">
+        <div className="flex flex-col gap-6 p-6 min-h-screen bg-gray-100 dark:bg-gray-950 transition-colors duration-300 font-sans relative">
             
-            {/* 1. EL ENCABEZADO */}
             <PosHeader userRole={userRole} />
 
-            {/* 2. EL BUSCADOR Y LÁSER */}
             <PosSearch 
                 searchTerm={searchTerm}
                 handleSearchChange={handleSearchChange}
@@ -45,7 +48,6 @@ export default function CheckoutMenu() {
             />
 
             <div className="flex flex-col lg:flex-row gap-6 grow items-start">
-                {/* 3. LA TABLA DEL CARRITO */}
                 <PosCartTable 
                     cart={cart}
                     loadingData={loadingData}
@@ -56,7 +58,6 @@ export default function CheckoutMenu() {
                     handleRemove={handleRemove}
                 />
 
-                {/* 4. EL RESUMEN Y BOTÓN DE COBRO */}
                 <PosSummary 
                     totalItems={totalItems}
                     subTotal={subTotal}
@@ -65,6 +66,18 @@ export default function CheckoutMenu() {
                     vaciarCarrito={vaciarCarrito}
                 />
             </div>
+
+            {/* CÍRCULO FLOTANTE DE STOCK */}
+            {ultimoAgregado && (
+                <div className="fixed bottom-8 left-8 z-50 transition-all duration-300 animate-in fade-in zoom-in">
+                    <div 
+                        className={`w-12 h-12 rounded-full border-4 shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center justify-center ${getColorStock(ultimoAgregado.stock)}`}
+                        title={`Stock disponible: ${ultimoAgregado.stock}`}
+                    >
+                        <div className="absolute w-full h-full rounded-full animate-ping [animation-iteration-count:1] opacity-50 bg-inherit" />
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

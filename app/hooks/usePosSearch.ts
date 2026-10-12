@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Product } from "./useCart"
+import { Product } from "./useAddProduct"
 
 export function usePosSearch(productos: Product[], onAddProduct: (producto: Product) => boolean) {
     const [searchTerm, setSearchTerm] = useState("")
