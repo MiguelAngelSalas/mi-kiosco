@@ -1,7 +1,7 @@
 "use client"
 import { Card } from "@radix-ui/themes"
-import { useEditProduct, Product } from "@/app/hooks/useEditProduct"
-
+import { useEditProduct } from "@/app/hooks/useEditProduct"
+import {Product} from "../hooks/useAddProduct"
 // Importamos nuestros dos componentes visuales
 import EditProductHeader from "./EditProductHeader"
 import EditProductForm from "./EditProductForm"
