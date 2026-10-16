@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Button, Flex, TextField, Text, Dialog } from "@radix-ui/themes"
+import { Button, Flex, TextField, Text } from "@radix-ui/themes"
 import { Save, PlusCircle, Loader2, Barcode } from "lucide-react"
 import toast from "react-hot-toast"
 import { Categoria } from "./EditProductModal" 
@@ -69,38 +69,26 @@ export default function AddProductForm({
                             />
                         </div>
 
-                        {/* BOTÓN Y MODAL DEL ESCÁNER */}
-                        <Dialog.Root open={isScannerOpen} onOpenChange={setIsScannerOpen}>
-                            <Dialog.Trigger>
-                                <Button 
-                                    type="button"
-                                    size="3" 
-                                    variant="soft" 
-                                    disabled={loading || buscandoInfo}
-                                    className="cursor-pointer px-3 bg-blue-50 text-[#33589c] hover:bg-blue-100 border-2 border-transparent shadow-sm dark:bg-[#33589c]/20 dark:text-blue-400"
-                                    title="Escanear con cámara"
-                                >
-                                    <Barcode size={22} />
-                                </Button>
-                            </Dialog.Trigger>
-                            
-                            <Dialog.Content style={{ maxWidth: 450 }} className="rounded-2xl">
-                                <Dialog.Title className="text-xl font-bold mb-2">Escanear Nuevo Producto</Dialog.Title>
-                                <Dialog.Description size="2" mb="4" color="gray">
-                                    Apuntá el código de barras hacia la cámara para cargar el ID y buscar su nombre automáticamente.
-                                </Dialog.Description>
-                                
-                                {isScannerOpen && <BarcodeScanner onScan={handleScanSuccess} />}
-                                
-                                <Flex justify="end" mt="4">
-                                    <Dialog.Close>
-                                        <Button type="button" variant="soft" color="gray" className="cursor-pointer">
-                                            Cancelar
-                                        </Button>
-                                    </Dialog.Close>
-                                </Flex>
-                            </Dialog.Content>
-                        </Dialog.Root>
+                        {/* BOTÓN PARA ABRIR TU ESCÁNER */}
+                        <Button 
+                            type="button"
+                            size="3" 
+                            variant="soft" 
+                            onClick={() => setIsScannerOpen(true)}
+                            disabled={loading || buscandoInfo}
+                            className="cursor-pointer px-3 bg-blue-50 text-[#33589c] hover:bg-blue-100 border-2 border-transparent shadow-sm dark:bg-[#33589c]/20 dark:text-blue-400"
+                            title="Escanear con cámara"
+                        >
+                            <Barcode size={22} />
+                        </Button>
+
+                        {/* TU COMPONENTE ESCÁNER CONDICIONAL */}
+                        {isScannerOpen && (
+                            <BarcodeScanner 
+                                onScanSuccess={handleScanSuccess} 
+                                onClose={() => setIsScannerOpen(false)} 
+                            />
+                        )}
                     </Flex>
                 </div>
 

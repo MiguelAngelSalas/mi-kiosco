@@ -1,131 +1,62 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
-import { Loader2, Camera, AlertCircle } from "lucide-react";
+"use client"
+import { X, ScanLine, Camera, AlertCircle } from "lucide-react"
+import { IconButton, Text } from "@radix-ui/themes"
+import { useScannerCamera } from "@/app/hooks/useScannerCamera"
 
 interface BarcodeScannerProps {
-  onScan: (codigo: string) => void;
+    onScanSuccess: (decodedText: string) => void
+    onClose: () => void
 }
 
-export default function BarcodeScanner({ onScan }: BarcodeScannerProps) {
-  const [inicializando, setInicializando] = useState(true);
-  const [errorAcceso, setErrorAcceso] = useState(false);
+export default function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) {
+    const { permisoDenegado } = useScannerCamera(onScanSuccess)
 
-  useEffect(() => {
-    // Inicializa la cámara
-    const scanner = new Html5QrcodeScanner(
-      "lector-codigo",
-      {
-        fps: 20, // Más FPS para una detección súper veloz
-        qrbox: { width: 280, height: 160 }, // Dimensiones óptimas para códigos de barra
-        aspectRatio: 1.777778, // Forzamos 16:9 para mejor encuadre
-      },
-      false
-    );
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                
+                {/* --- HEADER --- */}
+                <div className="bg-[#33589c] text-white p-4 flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <Camera size={20} />
+                        <Text weight="bold" size="3">Escanear Código</Text>
+                    </div>
+                    <IconButton 
+                        size="2" 
+                        variant="ghost" 
+                        className="text-white hover:bg-white/20 cursor-pointer rounded-full"
+                        onClick={onClose}
+                    >
+                        <X size={20} />
+                    </IconButton>
+                </div>
 
-    scanner.render(
-      (codigoDecodificado) => {
-        scanner.clear(); // Detiene la cámara al capturar
-        onScan(codigoDecodificado); // Pasa el resultado al buscador
-      },
-      (error) => {
-        // Ignorar errores continuos de escaneo frame-a-frame
-      }
-    );
+                {/* --- CUERPO --- */}
+                <div className="p-4 flex flex-col items-center">
+                    
+                    {permisoDenegado ? (
+                        <div className="text-center p-6 text-red-500 flex flex-col items-center">
+                            <AlertCircle size={40} className="mb-2" />
+                            <Text size="3" weight="bold">Cámara bloqueada</Text>
+                            <Text size="2" className="mt-2 text-gray-600 dark:text-gray-400">
+                                Por favor, dale permisos a tu navegador para usar la cámara y volvé a intentar.
+                            </Text>
+                        </div>
+                    ) : (
+                        <>
+                            <div 
+                                id="reader" 
+                                className="w-full rounded-xl overflow-hidden shadow-inner bg-black [&_video]:w-full [&_video]:object-cover [&_a]:hidden [&_button]:hidden [&_select]:hidden"
+                            ></div>
 
-    // Pequeño timeout para dar feedback visual de inicialización de la cámara
-    const timeout = setTimeout(() => {
-      setInicializando(false);
-      // Chequeamos si el elemento de video o cámara se cargó
-      const videoElement = document.querySelector("#lector-codigo video");
-      if (!videoElement) {
-        // Si después de unos segundos no levantó el video, puede que no haya permisos
-        setErrorAcceso(true);
-      }
-    }, 2200);
-
-    // Limpieza al desmontar el modal
-    return () => {
-      clearTimeout(timeout);
-      scanner.clear().catch(console.error);
-    };
-  }, [onScan]);
-
-  return (
-    <div className="relative w-full max-w-md mx-auto overflow-hidden rounded-2xl bg-slate-950 border border-gray-800 p-2 shadow-2xl">
-      {/* Contenedor del video con superposiciones estilizadas */}
-      <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800">
-        
-        {/* LECTOR HTML5 (La cámara de fondo) */}
-        {/* Las clases de abajo ocultan botones e inputs nativos horribles que genera la librería por defecto */}
-        <div 
-          id="lector-codigo" 
-          className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full [&_a]:hidden [&_button]:hidden [&_span]:hidden [&_select]:hidden"
-        ></div>
-
-        {/* 1. Capa de Inicialización / Cargando */}
-        {inicializando && (
-          <div className="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center gap-3 z-20 text-blue-400">
-            <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
-            <span className="text-sm font-semibold tracking-wide animate-pulse">
-              Encendiendo cámara...
-            </span>
-          </div>
-        )}
-
-        {/* 2. Feedback de error (Cámara bloqueada o sin permisos) */}
-        {errorAcceso && !inicializando && (
-          <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 text-center gap-3 z-30 text-red-400">
-            <AlertCircle className="h-12 w-12 text-red-500" />
-            <h4 className="font-bold text-white">Error de acceso</h4>
-            <p className="text-xs text-slate-400 max-w-[280px]">
-              No pudimos acceder a tu cámara. Asegurate de dar los permisos necesarios en tu navegador para continuar.
-            </p>
-          </div>
-        )}
-
-        {/* 3. CAPA DE DISEÑO DEL ESCÁNER (Inmutable sobre la cámara) */}
-        {!inicializando && !errorAcceso && (
-          <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-4">
-            {/* Indicador de estado */}
-            <div className="flex justify-between items-center">
-              <span className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-green-400 border border-green-500/30">
-                <span className="h-2.0 w-2.0 rounded-full bg-green-500 animate-ping"></span>
-                ESCANEO ACTIVO
-              </span>
-              <Camera className="text-slate-400 opacity-60" size={18} />
+                            <div className="mt-4 flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                                <ScanLine size={18} />
+                                <Text size="2">Alineá el código dentro del recuadro</Text>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
-
-            {/* MARCO GUÍA CENTRAL (El recuadro de escaneo) */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[150px]">
-              {/* Esquinas superiores e inferiores estilizadas */}
-              <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-green-500 rounded-tl-lg"></div>
-              <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-green-500 rounded-tr-lg"></div>
-              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-green-500 rounded-bl-lg"></div>
-              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-green-500 rounded-br-lg"></div>
-
-              {/* LÁSER DE ESCANEO (Animación de línea roja/verde que sube y baja) */}
-              <div className="w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-[scan_2s_ease-in-out_infinite] absolute"></div>
-            </div>
-
-            {/* Ayuda visual inferior */}
-            <div className="self-center">
-              <p className="bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full text-[11px] font-medium text-slate-300 border border-slate-700/30 tracking-wide">
-                Alineá el código de barras dentro del marco
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Estilos CSS inline específicos para animar el láser de escaneo */}
-      <style jsx global>{`
-        @keyframes scan {
-          0%, 100% { top: 10%; }
-          50% { top: 90%; }
-        }
-      `}</style>
-    </div>
-  );
+        </div>
+    )
 }
