@@ -1,9 +1,14 @@
 import { useState } from "react"
+import dynamic from "next/dynamic" // 1. Agregamos esto para Vercel
 import { Button, Flex, TextField, Text } from "@radix-ui/themes"
 import { Save, PlusCircle, Loader2, Barcode } from "lucide-react"
 import toast from "react-hot-toast"
 import { Categoria } from "./EditProductModal" 
-import BarcodeScanner from "./BarcodeScanner" // Asegurate de que la ruta sea correcta
+
+// 2. Cambiamos el import normal por el dinámico para evitar el error de SSR en Vercel
+const BarcodeScanner = dynamic(() => import("./BarcodeScanner"), { 
+    ssr: false 
+})
 
 interface AddProductFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
@@ -16,22 +21,18 @@ interface AddProductFormProps {
 export default function AddProductForm({ 
     handleSubmit, onClose, loading, categorias, onOpenCategoryModal 
 }: AddProductFormProps) {
-    // Estados para controlar los inputs que se van a autocompletar
     const [nombre, setNombre] = useState("")
     const [codigoBarras, setCodigoBarras] = useState("")
     
-    // Estados para el escáner y la carga
     const [isScannerOpen, setIsScannerOpen] = useState(false)
     const [buscandoInfo, setBuscandoInfo] = useState(false)
 
-    // Función que se dispara cuando la cámara detecta un código
     const handleScanSuccess = async (codigoLeido: string) => {
         setCodigoBarras(codigoLeido)
-        setIsScannerOpen(false) // Cerramos el modal de la cámara
+        setIsScannerOpen(false) 
         setBuscandoInfo(true)
         
         try {
-            // Consultamos a Open Food Facts (API gratuita sin key)
             const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${codigoLeido}.json`)
             const data = await res.json()
             
@@ -81,14 +82,8 @@ export default function AddProductForm({
                         >
                             <Barcode size={22} />
                         </Button>
-
-                        {/* TU COMPONENTE ESCÁNER CONDICIONAL */}
-                        {isScannerOpen && (
-                            <BarcodeScanner 
-                                onScanSuccess={handleScanSuccess} 
-                                onClose={() => setIsScannerOpen(false)} 
-                            />
-                        )}
+                        
+                        {/* 3. ¡EL ESCÁNER YA NO ESTÁ ACÁ ADENTRO! */}
                     </Flex>
                 </div>
 
@@ -105,7 +100,6 @@ export default function AddProductForm({
                         disabled={loading || buscandoInfo} 
                         className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 shadow-sm focus-within:border-[#33589c]"
                     >
-                        {/* Agregamos un spinner si está buscando el nombre en internet */}
                         {buscandoInfo && (
                             <TextField.Slot>
                                 <Loader2 size={18} className="animate-spin text-[#33589c]" />
@@ -218,6 +212,14 @@ export default function AddProductForm({
                     </Button>
                 </Flex>
             </div>
+
+            {/* 4. ¡EL ESCÁNER AHORA VIVE ACÁ ABAJO, SUELTO! */}
+            {isScannerOpen && (
+                <BarcodeScanner 
+                    onScanSuccess={handleScanSuccess} 
+                    onClose={() => setIsScannerOpen(false)} 
+                />
+            )}
         </form>
     )
 }
