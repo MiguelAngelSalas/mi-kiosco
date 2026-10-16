@@ -155,27 +155,39 @@ export async function addProductAction(formData: FormData){
         categoriaId: categoriaId
     }
 
-    try{
-        const res = await fetch(`${API_URL}/api/Productos`,{
+    try {
+        const res = await fetch(`${API_URL}/api/Productos`, {
             method: "POST",
-            headers:{
+            headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token.trim()}` // <-- LA LLAVE MAGICA
+                "Authorization": `Bearer ${token.trim()}`
             }, 
             body: JSON.stringify(payload),
-            cache: 'no-store' // <-- ANTI FANTASMAS DE NEXT.JS
+            cache: 'no-store'
         })
 
-        const data = await res.json().catch(()=>null)
+        // 1. LEEMOS LA RESPUESTA CRUDA DEL BACKEND COMO TEXTO
+        const textData = await res.text()
+        
+        // 2. LA IMPRIMIMOS EN TU TERMINAL PARA VER QUÉ SE QUEJA AGUS
+        console.log("🚨 STATUS DEL BACKEND:", res.status)
+        console.log("🚨 RESPUESTA DEL BACKEND:", textData)
 
-        if(!res.ok){
-            return {error: data?.message || data?.error || `Error del servidor (${res.status})`}
+        // 3. Intentamos pasarlo a JSON por si viene ordenado
+        let data = null
+        try { data = JSON.parse(textData) } catch(e) {}
+
+        if (!res.ok) {
+            return { error: data?.message || data?.error || `Error del servidor (${res.status})` }
         }
 
-        return {success : true, productoNuevo: {...payload,
-                id_producto: data?.id_producto || data?.id || data?.data?.id_producto}} // success corregido
-    }catch(error){
-        return {error: `No se pudo conectar al servidor`}
+        return { 
+            success: true, 
+            productoNuevo: { ...payload, id_producto: data?.id_producto || data?.id || data?.data?.id_producto } 
+        }
+    } catch(error) {
+        console.log("🚨 ERROR DE RED/FETCH:", error)
+        return { error: `No se pudo conectar al servidor` }
     }
 }
 
