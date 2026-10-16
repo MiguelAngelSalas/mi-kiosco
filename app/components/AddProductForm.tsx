@@ -1,14 +1,11 @@
 import { useState } from "react"
-import dynamic from "next/dynamic" // 1. Agregamos esto para Vercel
 import { Button, Flex, TextField, Text } from "@radix-ui/themes"
 import { Save, PlusCircle, Loader2, Barcode } from "lucide-react"
 import toast from "react-hot-toast"
 import { Categoria } from "./EditProductModal" 
-
+import BarcodeScanner from "./BarcodeScanner"
 // 2. Cambiamos el import normal por el dinámico para evitar el error de SSR en Vercel
-const BarcodeScanner = dynamic(() => import("./BarcodeScanner"), { 
-    ssr: false 
-})
+
 
 interface AddProductFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
