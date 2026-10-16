@@ -1,14 +1,10 @@
 import { useState, useCallback } from "react"
-import dynamic from "next/dynamic"
 import { Button, Flex, TextField, Text } from "@radix-ui/themes"
 import { Save, PlusCircle, Loader2, Barcode } from "lucide-react"
 import toast from "react-hot-toast"
 import { Categoria } from "./EditProductModal" 
 
-// 1. IMPORTACIÓN DINÁMICA (Para que Vercel no crashee en producción)
-const BarcodeScanner = dynamic(() => import("./BarcodeScanner"), { 
-    ssr: false 
-})
+import BarcodeScanner from "./BarcodeScanner"
 
 interface AddProductFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
