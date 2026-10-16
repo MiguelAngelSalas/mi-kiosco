@@ -1,7 +1,9 @@
-import { Button, Flex, TextField } from "@radix-ui/themes"
-import { Search, Plus, Wallet } from "lucide-react"
+import { Button, Flex, TextField, Dialog } from "@radix-ui/themes"
+import { Search, Plus, Wallet, Barcode } from "lucide-react"
 import toast from "react-hot-toast"
-import CreateUserModal from "../CreateUserModal" // Ajustá la ruta según tu estructura
+import { useState } from "react"
+import CreateUserModal from "../CreateUserModal" 
+import BarcodeScanner from "../BarcodeScanner" // Asegurate de que la ruta sea correcta
 
 interface AdminToolbarProps {
     searchTerm: string
@@ -10,22 +12,67 @@ interface AdminToolbarProps {
 }
 
 export default function AdminToolbar({ searchTerm, setSearchTerm, onOpenAddProduct }: AdminToolbarProps) {
+    const [isScannerOpen, setIsScannerOpen] = useState(false)
+
+    // Esta función la llama el escáner cuando lee un código
+    const handleScanSuccess = (codigoLeido: string) => {
+        setSearchTerm(codigoLeido) // Escribe el código en tu barra de búsqueda
+        setIsScannerOpen(false)    // Cierra el modal de la cámara
+        toast.success("Código detectado", { icon: "📷" })
+    }
+
     return (
         <Flex direction={{ initial: "column", md: "row" }} gap="4" align={{ md: "center" }} justify="between">
-            <div className="relative w-full md:w-[450px]">
-                <TextField.Root 
-                    placeholder="Buscar producto por nombre o ID..." 
-                    size="3"
-                    radius="large"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="transition-all h-14 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-700 focus-within:border-[#33589c] shadow-md text-lg"
-                >
-                    <TextField.Slot>
-                        <Search size={20} className="text-gray-500" />
-                    </TextField.Slot>    
-                </TextField.Root>
-            </div>
+            <Flex gap="2" className="w-full md:w-[450px]">
+                <div className="relative w-full">
+                    <TextField.Root 
+                        placeholder="Buscar producto por nombre o ID..." 
+                        size="3"
+                        radius="large"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="transition-all h-14 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-700 focus-within:border-[#33589c] shadow-md text-lg"
+                    >
+                        <TextField.Slot>
+                            <Search size={20} className="text-gray-500" />
+                        </TextField.Slot>    
+                    </TextField.Root>
+                </div>
+
+                {/* BOTÓN Y MODAL DEL ESCÁNER */}
+                <Dialog.Root open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+                    <Dialog.Trigger>
+                        <Button 
+                            size="3" 
+                            variant="soft" 
+                            className="cursor-pointer h-14 px-4 bg-blue-50 text-[#33589c] hover:bg-blue-100 border-2 border-transparent shadow-sm dark:bg-[#33589c]/20 dark:text-blue-400"
+                            title="Escanear código de barras"
+                        >
+                            <Barcode size={24} />
+                        </Button>
+                    </Dialog.Trigger>
+                    
+                    <Dialog.Content style={{ maxWidth: 450 }} className="rounded-2xl">
+                        <Dialog.Title className="text-xl font-bold mb-2">Escanear Producto</Dialog.Title>
+                        <Dialog.Description size="2" mb="4" color="gray">
+                            Apuntá el código de barras del producto hacia la cámara para buscarlo en el inventario.
+                        </Dialog.Description>
+                        
+                        {/* Renderizamos la cámara solo cuando el modal está abierto */}
+                        {isScannerOpen && (
+                            <BarcodeScanner onScan={handleScanSuccess} />
+                        )}
+                        
+                        <Flex justify="end" mt="4">
+                            <Dialog.Close>
+                                <Button variant="soft" color="gray" className="cursor-pointer">
+                                    Cancelar
+                                </Button>
+                            </Dialog.Close>
+                        </Flex>
+                    </Dialog.Content>
+                </Dialog.Root>
+            </Flex>
             
             <Flex gap="3" wrap="wrap">
                 <Button 

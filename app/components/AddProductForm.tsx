@@ -1,6 +1,9 @@
-import { Button, Flex, TextField, Text } from "@radix-ui/themes"
-import { Save, PlusCircle, Loader2 } from "lucide-react"
-import { Categoria } from "./EditProductModal" // Ajustá esta ruta
+import { useState } from "react"
+import { Button, Flex, TextField, Text, Dialog } from "@radix-ui/themes"
+import { Save, PlusCircle, Loader2, Barcode } from "lucide-react"
+import toast from "react-hot-toast"
+import { Categoria } from "./EditProductModal" 
+import BarcodeScanner from "./BarcodeScanner" // Asegurate de que la ruta sea correcta
 
 interface AddProductFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
@@ -13,10 +16,94 @@ interface AddProductFormProps {
 export default function AddProductForm({ 
     handleSubmit, onClose, loading, categorias, onOpenCategoryModal 
 }: AddProductFormProps) {
+    // Estados para controlar los inputs que se van a autocompletar
+    const [nombre, setNombre] = useState("")
+    const [codigoBarras, setCodigoBarras] = useState("")
+    
+    // Estados para el escáner y la carga
+    const [isScannerOpen, setIsScannerOpen] = useState(false)
+    const [buscandoInfo, setBuscandoInfo] = useState(false)
+
+    // Función que se dispara cuando la cámara detecta un código
+    const handleScanSuccess = async (codigoLeido: string) => {
+        setCodigoBarras(codigoLeido)
+        setIsScannerOpen(false) // Cerramos el modal de la cámara
+        setBuscandoInfo(true)
+        
+        try {
+            // Consultamos a Open Food Facts (API gratuita sin key)
+            const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${codigoLeido}.json`)
+            const data = await res.json()
+            
+            if (data.status === 1 && data.product.product_name) {
+                setNombre(data.product.product_name)
+                toast.success("Producto encontrado en la base mundial", { icon: "🌍" })
+            } else {
+                toast("Código leído. Ingresá el nombre manualmente.", { icon: "ℹ️" })
+            }
+        } catch (error) {
+            toast.error("Hubo un error al buscar el producto en internet.")
+        } finally {
+            setBuscandoInfo(false)
+        }
+    }
+
     return (
         <form onSubmit={handleSubmit} className="flex flex-col">
             {/* --- CUERPO --- */}
             <div className="p-6 flex flex-col gap-5 max-h-[65vh] overflow-y-auto">
+                <div>
+                    <Text as="label" size="2" className="mb-1.5 block text-gray-700 dark:text-gray-300 font-semibold">Código de Barras *</Text>
+                    <Flex gap="2" align="center">
+                        <div className="relative w-full">
+                            <TextField.Root 
+                                name="codigoBarras" 
+                                required 
+                                placeholder="Ej: 779123456789" 
+                                size="3" 
+                                radius="large"
+                                value={codigoBarras}
+                                onChange={(e) => setCodigoBarras(e.target.value)}
+                                disabled={loading || buscandoInfo} 
+                                className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 shadow-sm focus-within:border-[#33589c] w-full"
+                            />
+                        </div>
+
+                        {/* BOTÓN Y MODAL DEL ESCÁNER */}
+                        <Dialog.Root open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+                            <Dialog.Trigger>
+                                <Button 
+                                    type="button"
+                                    size="3" 
+                                    variant="soft" 
+                                    disabled={loading || buscandoInfo}
+                                    className="cursor-pointer px-3 bg-blue-50 text-[#33589c] hover:bg-blue-100 border-2 border-transparent shadow-sm dark:bg-[#33589c]/20 dark:text-blue-400"
+                                    title="Escanear con cámara"
+                                >
+                                    <Barcode size={22} />
+                                </Button>
+                            </Dialog.Trigger>
+                            
+                            <Dialog.Content style={{ maxWidth: 450 }} className="rounded-2xl">
+                                <Dialog.Title className="text-xl font-bold mb-2">Escanear Nuevo Producto</Dialog.Title>
+                                <Dialog.Description size="2" mb="4" color="gray">
+                                    Apuntá el código de barras hacia la cámara para cargar el ID y buscar su nombre automáticamente.
+                                </Dialog.Description>
+                                
+                                {isScannerOpen && <BarcodeScanner onScan={handleScanSuccess} />}
+                                
+                                <Flex justify="end" mt="4">
+                                    <Dialog.Close>
+                                        <Button type="button" variant="soft" color="gray" className="cursor-pointer">
+                                            Cancelar
+                                        </Button>
+                                    </Dialog.Close>
+                                </Flex>
+                            </Dialog.Content>
+                        </Dialog.Root>
+                    </Flex>
+                </div>
+
                 <div>
                     <Text as="label" size="2" className="mb-1.5 block text-gray-700 dark:text-gray-300 font-semibold">Nombre del Producto *</Text>
                     <TextField.Root 
@@ -25,22 +112,18 @@ export default function AddProductForm({
                         placeholder="Ej: Alfajor Guaymallén" 
                         size="3" 
                         radius="large"
-                        disabled={loading} 
+                        value={nombre}
+                        onChange={(e) => setNombre(e.target.value)}
+                        disabled={loading || buscandoInfo} 
                         className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 shadow-sm focus-within:border-[#33589c]"
-                    />
-                </div>
-
-                <div>
-                    <Text as="label" size="2" className="mb-1.5 block text-gray-700 dark:text-gray-300 font-semibold">Código de Barras *</Text>
-                    <TextField.Root 
-                        name="codigoBarras" 
-                        required 
-                        placeholder="Ej: 779123456789" 
-                        size="3" 
-                        radius="large"
-                        disabled={loading} 
-                        className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 shadow-sm focus-within:border-[#33589c]"
-                    />
+                    >
+                        {/* Agregamos un spinner si está buscando el nombre en internet */}
+                        {buscandoInfo && (
+                            <TextField.Slot>
+                                <Loader2 size={18} className="animate-spin text-[#33589c]" />
+                            </TextField.Slot>
+                        )}
+                    </TextField.Root>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-5">
