@@ -51,6 +51,7 @@ export function useAddProduct(onClose: () => void, onSuccess: (newProduct: Produ
             
             // Ahora TS sabe perfectamente que id_producto puede existir
             const idReal = respuesta.productoNuevo?.id_producto || Date.now().toString()
+            
             onSuccess({
                 id_producto: idReal,
                 nombre: formData.get("nombre") as string,
@@ -58,7 +59,7 @@ export function useAddProduct(onClose: () => void, onSuccess: (newProduct: Produ
                 precio_venta: Number(formData.get("precioVenta")),
                 costo: Number(formData.get("precioCosto")),
                 stock: Number(formData.get("stock")),
-                id_categoria: formData.get("categoriaId") as string
+                id_categoria: Number(formData.get("categoriaId")) // 👈 ¡LA MAGIA ESTABA ACÁ! Pasarlo a Number()
             })
             
             form.reset()
