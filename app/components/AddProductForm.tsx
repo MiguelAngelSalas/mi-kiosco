@@ -1,11 +1,14 @@
-import { useState } from "react"
+import { useState, useCallback } from "react"
+import dynamic from "next/dynamic"
 import { Button, Flex, TextField, Text } from "@radix-ui/themes"
 import { Save, PlusCircle, Loader2, Barcode } from "lucide-react"
 import toast from "react-hot-toast"
 import { Categoria } from "./EditProductModal" 
-import BarcodeScanner from "./BarcodeScanner"
-// 2. Cambiamos el import normal por el dinámico para evitar el error de SSR en Vercel
 
+// 1. IMPORTACIÓN DINÁMICA (Para que Vercel no crashee en producción)
+const BarcodeScanner = dynamic(() => import("./BarcodeScanner"), { 
+    ssr: false 
+})
 
 interface AddProductFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
@@ -24,7 +27,8 @@ export default function AddProductForm({
     const [isScannerOpen, setIsScannerOpen] = useState(false)
     const [buscandoInfo, setBuscandoInfo] = useState(false)
 
-    const handleScanSuccess = async (codigoLeido: string) => {
+    // 2. USECALLBACK (Para que el celular no parpadee y te deje la pantalla negra)
+    const handleScanSuccess = useCallback(async (codigoLeido: string) => {
         setCodigoBarras(codigoLeido)
         setIsScannerOpen(false) 
         setBuscandoInfo(true)
@@ -44,7 +48,7 @@ export default function AddProductForm({
         } finally {
             setBuscandoInfo(false)
         }
-    }
+    }, []) // <--- Dependencias vacías, super importante
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col">
@@ -79,8 +83,6 @@ export default function AddProductForm({
                         >
                             <Barcode size={22} />
                         </Button>
-                        
-                        {/* 3. ¡EL ESCÁNER YA NO ESTÁ ACÁ ADENTRO! */}
                     </Flex>
                 </div>
 
@@ -210,7 +212,7 @@ export default function AddProductForm({
                 </Flex>
             </div>
 
-            {/* 4. ¡EL ESCÁNER AHORA VIVE ACÁ ABAJO, SUELTO! */}
+            {/* 3. EL ESCÁNER SUELTO AL FINAL (Para que Radix no bloquee los permisos) */}
             {isScannerOpen && (
                 <BarcodeScanner 
                     onScanSuccess={handleScanSuccess} 
