@@ -1,7 +1,7 @@
 "use client"
 import { Heading, Button, Card, Flex, TextField, Text, IconButton } from "@radix-ui/themes"
 import { FolderPlus, X, Save, Loader2 } from "lucide-react"
-import { useAddCategory, Categoria } from "@/app/hooks/useAddCategory" // Ajustá la ruta
+import { useAddCategory, Categoria } from "@/app/hooks/useAddCategory" 
 
 interface AddCategoryModalProps {
     isOpen: boolean
@@ -10,7 +10,6 @@ interface AddCategoryModalProps {
 }
 
 export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCategoryModalProps) {
-    // 👇 Llamamos al Hook
     const { 
         nombreCategoria, 
         setNombreCategoria, 
@@ -45,12 +44,21 @@ export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCate
                     </IconButton>
                 </div>
                 
-                <form onSubmit={handleSubmit} className="flex flex-col">
+                {/* 👇 FIX 1: Escudo anti-burbujeo para el Enter del celular */}
+                <form 
+                    onSubmit={(e) => { 
+                        e.stopPropagation(); 
+                        handleSubmit(e); 
+                    }} 
+                    className="flex flex-col"
+                >
                     {/* --- CUERPO DEL MODAL --- */}
                     <div className="p-6">
                         <Text as="label" size="2" className="mb-1.5 block text-gray-700 dark:text-gray-300 font-semibold">
                             Nombre de la Categoría *
                         </Text>
+                        
+                        {/* 👇 FIX 2 y 3: Volamos el autoFocus y el disabled del input */}
                         <TextField.Root 
                             name="nombre"
                             size="3"
@@ -58,8 +66,6 @@ export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCate
                             placeholder="Ej: Almacén, Bebidas, etc."
                             value={nombreCategoria} 
                             onChange={(e) => setNombreCategoria(e.target.value)}
-                            disabled={loading}
-                            autoFocus
                             className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 shadow-sm focus-within:border-[#33589c]"
                         />
                     </div>
