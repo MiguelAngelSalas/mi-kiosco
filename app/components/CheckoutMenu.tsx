@@ -1,41 +1,60 @@
 "use client"
+import { useState } from "react"
+import toast from "react-hot-toast"
+
 import { usePosData } from "@/app/hooks/usePosData"
 import { useCart } from "@/app/hooks/useCart"
 import { usePosSearch } from "@/app/hooks/usePosSearch"
-import { useStockAlert } from "@/app/hooks/useStockAlert" // 👈 Importamos nuestro nuevo hook
+import { useStockAlert } from "@/app/hooks/useStockAlert" 
 
 import PosHeader from "@/app/components/pos/PosHeader"
 import PosSearch from "@/app/components/pos/PosSearch"
 import PosCartTable from "@/app/components/pos/PosCartTable"
 import PosSummary from "@/app/components/pos/PosSummary"
 
-export default function CheckoutMenu() {
-    // 1. Datos
-    const { userRole, productos, loadingData } = usePosData()
+import BarcodeScanner from "@/app/components/BarcodeScanner" // Ajustá tu ruta
 
-    // 2. Carrito
+export default function CheckoutMenu() {
+    // Estado del escáner
+    const [isScannerOpen, setIsScannerOpen] = useState(false)
+
+    const { userRole, productos, loadingData } = usePosData()
     const { 
         cart, handleAddCart, handleIncrement, handleDecrement, handleManualQuantity, 
         handleManualBlur, handleRemove, vaciarCarrito, subTotal, subTotalFormateado, 
         totalItems, itemsParaCheckout 
     } = useCart()
-
-    // 3. Alerta Flotante (Lógica aislada)
     const { 
         ultimoAgregado, handleAddCartConAlerta, getColorStock 
     } = useStockAlert(handleAddCart)
 
-    // 4. Buscador
     const {
         searchTerm, selectedIndex, searchContainerRef, productosFiltrados,
         handleSearchChange, handleKeyDown, handleSelectProduct
     } = usePosSearch(productos, handleAddCartConAlerta)
+
+    // Función del escáner
+    const handleScanSuccess = (codigoLeido: string) => {
+        const productoEncontrado = productos.find(p => p.codigo_barras === codigoLeido)
+
+        if (productoEncontrado) {
+            handleAddCartConAlerta(productoEncontrado)
+            toast.success(`${productoEncontrado.nombre} agregado!`, {
+                icon: "🛒",
+                style: { background: '#dcfce3', color: '#166534' }
+            })
+            setIsScannerOpen(false) 
+        } else {
+            toast.error("Producto no encontrado en el inventario", { duration: 3000 })
+        }
+    }
 
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen bg-gray-100 dark:bg-gray-950 transition-colors duration-300 font-sans relative">
             
             <PosHeader userRole={userRole} />
 
+            {/* 👇 Le pasamos la función onOpenScanner a tu buscador */}
             <PosSearch 
                 searchTerm={searchTerm}
                 handleSearchChange={handleSearchChange}
@@ -45,6 +64,7 @@ export default function CheckoutMenu() {
                 productosFiltrados={productosFiltrados}
                 selectedIndex={selectedIndex}
                 handleSelectProduct={handleSelectProduct}
+                onOpenScanner={() => setIsScannerOpen(true)} // <-- NUEVO
             />
 
             <div className="flex flex-col lg:flex-row gap-6 grow items-start">
@@ -77,6 +97,15 @@ export default function CheckoutMenu() {
                         <div className="absolute w-full h-full rounded-full animate-ping [animation-iteration-count:1] opacity-50 bg-inherit" />
                     </div>
                 </div>
+            )}
+
+            {/* 👇 EL MODAL DEL ESCÁNER SE QUEDA ACÁ (sin botón flotante) */}
+            {isScannerOpen && (
+                <BarcodeScanner 
+                    productos={productos} 
+                    onClose={() => setIsScannerOpen(false)} 
+                    onScanSuccess={handleScanSuccess} 
+                />
             )}
         </div>
     )

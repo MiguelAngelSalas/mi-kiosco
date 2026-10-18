@@ -1,5 +1,5 @@
-import { TextField } from "@radix-ui/themes"
-import { Search, Barcode, Loader2 } from "lucide-react"
+import { TextField, IconButton } from "@radix-ui/themes" // 👈 Agregamos IconButton
+import { Search, Barcode, Loader2, ScanLine } from "lucide-react"
 import { Product } from "@/app/hooks/useAddProduct"
 import { ChangeEvent, KeyboardEvent, RefObject } from "react"
 
@@ -12,11 +12,13 @@ interface PosSearchProps {
     productosFiltrados: Product[]
     selectedIndex: number
     handleSelectProduct: (producto: Product) => void
+    onOpenScanner: () => void // 👈 NUEVA PROP: Recibe la función para abrir la cámara
 }
 
 export default function PosSearch({
     searchTerm, handleSearchChange, handleKeyDown, loadingData,
-    searchContainerRef, productosFiltrados, selectedIndex, handleSelectProduct
+    searchContainerRef, productosFiltrados, selectedIndex, handleSelectProduct,
+    onOpenScanner // 👈 La sacamos de las props
 }: PosSearchProps) {
     return (
         <div className="relative w-full z-20" ref={searchContainerRef}>
@@ -32,8 +34,19 @@ export default function PosSearch({
                 <TextField.Slot>
                     {loadingData ? <Loader2 size={20} className="animate-spin text-gray-500" /> : <Search size={20} className="text-gray-500" />}
                 </TextField.Slot>    
-                <TextField.Slot side="right" className="pr-3">
-                    <Barcode size={24} className="text-gray-400" />
+                
+                {/* 👇 ACÁ ESTÁ LA MAGIA: Convertimos el ícono en un botón clickeable */}
+                <TextField.Slot side="right" className="pr-2">
+                    <IconButton 
+                        type="button"
+                        size="3" 
+                        variant="ghost" 
+                        onClick={onOpenScanner}
+                        className="cursor-pointer text-gray-500 hover:text-[#33589c] hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                        title="Escanear con cámara"
+                    >
+                        <Barcode size={26} />
+                    </IconButton>
                 </TextField.Slot>
             </TextField.Root>
             
