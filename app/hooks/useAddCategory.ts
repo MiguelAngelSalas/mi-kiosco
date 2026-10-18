@@ -1,6 +1,7 @@
+"use client"
 import { useState } from "react"
 import toast from "react-hot-toast"
-import { createCategoryAction } from "../admin/actions" // Ajustá esta ruta
+import { createCategoryAction } from "../admin/actions"
 
 export interface Categoria {
     id_categoria: string | number
@@ -16,8 +17,14 @@ export function useAddCategory(onClose: () => void, onSuccess: (nuevaCategoria: 
         onClose()
     }
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault()
+
+        // 👇 HACK MOBILE 1: Forzamos que se cierre el teclado ANTES de hacer nada
+        if (typeof window !== "undefined" && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur()
+        }
+
         const nombreLimpio = nombreCategoria.trim()
 
         if (!nombreLimpio) {
@@ -27,7 +34,6 @@ export function useAddCategory(onClose: () => void, onSuccess: (nuevaCategoria: 
 
         setLoading(true)
 
-        // Armamos el FormData a mano porque estamos usando un estado controlado
         const formData = new FormData()
         formData.append("nombre", nombreLimpio)
 
@@ -40,19 +46,25 @@ export function useAddCategory(onClose: () => void, onSuccess: (nuevaCategoria: 
                 return
             }
 
-            toast.success("Categoría agregada en el servidor")
-            
-            // Le pasamos al componente padre la categoría
+            const nuevoId = respuesta?.data?.id_categoria || respuesta?.data?.id || Date.now()
+            const nuevoNombre = respuesta?.data?.nombre_categoria || respuesta?.data?.nombre || nombreLimpio
+
             onSuccess({
-                id_categoria: respuesta.data?.id || respuesta.data?.id_categoria || Date.now(),
-                nombre_categoria: respuesta.data?.nombre || nombreLimpio
+                id_categoria: nuevoId,
+                nombre_categoria: nuevoNombre
             })
-            
+
+            toast.success("Categoría agregada exitosamente")
             setNombreCategoria("")
             setLoading(false)
-            onClose()
 
-        } catch (err) {
+            // 👇 HACK MOBILE 2: Le damos 150 milisegundos al celular para que termine 
+            // la animación de cerrar el teclado antes de destruir el HTML de la ventana.
+            setTimeout(() => {
+                onClose()
+            }, 150)
+
+        } catch (err: any) {
             toast.error("Error inesperado al guardar la categoría")
             setLoading(false)
         }
