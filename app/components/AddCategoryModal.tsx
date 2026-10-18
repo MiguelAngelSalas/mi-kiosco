@@ -21,7 +21,7 @@ export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCate
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4 transition-all duration-300">
+        <div translate="no" className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4 transition-all duration-300">
             <Card className="w-full max-w-sm bg-white dark:bg-gray-900 p-0 border border-gray-300 dark:border-gray-700 shadow-2xl rounded-2xl flex flex-col overflow-hidden">
                 
                 {/* --- HEADER --- */}
@@ -60,6 +60,8 @@ export default function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCate
                             placeholder="Ej: Almacén, Bebidas, etc."
                             value={nombreCategoria}
                             onChange={(e) => setNombreCategoria(e.target.value)}
+                            autoComplete="off"
+                            autoCorrect="off"
                             // 👇 Atrapamos el botón "Ir/Enter" del teclado del celu a mano
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
