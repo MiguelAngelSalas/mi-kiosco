@@ -13,6 +13,7 @@ interface AddProductModalProps {
     categorias: Categoria[]
     onSuccess: (newProduct: Product) => void
     onOpenCategoryModal: () => void
+    productos : Product[]
 }
 
 export default function AddProductModal({ 
@@ -20,7 +21,7 @@ export default function AddProductModal({
     onClose, 
     categorias, 
     onSuccess, 
-    onOpenCategoryModal 
+    onOpenCategoryModal, productos
 }: AddProductModalProps) {
     
     // El hook maneja la conexión con el servidor
@@ -43,9 +44,12 @@ export default function AddProductModal({
                     loading={loading}
                     categorias={categorias}
                     onOpenCategoryModal={onOpenCategoryModal}
+                    productos = {productos}
                 />
                 
+                
             </Card>
+            
         </div>
     )
 }

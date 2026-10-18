@@ -8,17 +8,22 @@ export function useScannerCamera(onScanSuccess: (decodedText: string) => void) {
     const scannerRef = useRef<Html5Qrcode | null>(null)
 
     useEffect(() => {
+        // 1. PRIMERA BARRERA: Si el div todavía no se dibujó, frenamos acá y no rompemos nada.
+        if (!document.getElementById("reader")) {
+            return
+        }
+
         const html5QrCode = new Html5Qrcode("reader")
         scannerRef.current = html5QrCode
+        
+        let isMounted = true // Bandera de seguridad para evitar fugas de memoria
 
         const iniciarCamara = async () => {
             try {
-                // 1. Despertamos al celular y le pedimos la lista de cámaras primero.
-                // Esto fuerza el cartelito de permisos de la forma más compatible.
+                // Despertamos al celular y le pedimos la lista de cámaras primero.
                 const devices = await Html5Qrcode.getCameras()
                 
                 if (devices && devices.length > 0) {
-                    // 2. Si dio permiso y encontró cámaras, arrancamos el motor
                     await html5QrCode.start(
                         { facingMode: "environment" },
                         {
@@ -29,7 +34,7 @@ export function useScannerCamera(onScanSuccess: (decodedText: string) => void) {
                         (decodedText) => {
                             if (scannerRef.current && scannerRef.current.isScanning) {
                                 scannerRef.current.stop().then(() => {
-                                    onScanSuccess(decodedText)
+                                    if (isMounted) onScanSuccess(decodedText)
                                 }).catch(console.error)
                             }
                         },
@@ -38,20 +43,30 @@ export function useScannerCamera(onScanSuccess: (decodedText: string) => void) {
                         }
                     )
                 } else {
-                    toast.error("El dispositivo no reportó ninguna cámara.")
-                    setPermisoDenegado(true)
+                    if (isMounted) {
+                        toast.error("El dispositivo no reportó ninguna cámara.")
+                        setPermisoDenegado(true)
+                    }
                 }
             } catch (err: any) {
-                // 3. LA MAGIA: Si falla, que nos escupa el error exacto en la pantalla.
-                const mensajeError = err?.message || String(err)
-                toast.error(`Error técnico: ${mensajeError}`, { duration: 6000 }) 
-                setPermisoDenegado(true) 
+                if (isMounted) {
+                    const mensajeError = err?.message || String(err)
+                    toast.error(`Error técnico: ${mensajeError}`, { duration: 6000 }) 
+                    setPermisoDenegado(true) 
+                }
             }
         }
 
-        iniciarCamara()
+        // 2. SEGUNDA BARRERA: Le damos 100ms de respiro a Next.js para que termine 
+        // de renderizar todo el HTML y el CSS antes de prender la cámara.
+        const timer = setTimeout(() => {
+            if (isMounted) iniciarCamara()
+        }, 100)
 
+        // Limpieza cuando cerramos el modal
         return () => {
+            isMounted = false
+            clearTimeout(timer) // Matamos el timer si el usuario cerró rapidísimo
             if (scannerRef.current && scannerRef.current.isScanning) {
                 scannerRef.current.stop().catch(console.error)
             }

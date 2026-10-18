@@ -2,14 +2,41 @@
 import { X, ScanLine, Camera, AlertCircle } from "lucide-react"
 import { IconButton, Text } from "@radix-ui/themes"
 import { useScannerCamera } from "@/app/hooks/useScannerCamera"
-
+import toast from "react-hot-toast" // 👈 Importamos los toasts
+import { Product } from "../hooks/useAddProduct"
 interface BarcodeScannerProps {
     onScanSuccess: (decodedText: string) => void
     onClose: () => void
+    productos: Product[] // 👈 Le pasamos la lista de productos para validar
 }
 
-export default function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) {
-    const { permisoDenegado } = useScannerCamera(onScanSuccess)
+export default function BarcodeScanner({ onScanSuccess, onClose, productos }: BarcodeScannerProps) {
+    
+    // 👇 Interceptamos la lectura de la cámara antes de avisarle a la UI
+    const handleScan = (decodedText: string) => {
+        // Chequeamos si el código de barras ya existe en el inventario
+        const yaExiste = productos.some(p => p.codigo_barras === decodedText)
+
+        if (yaExiste) {
+            toast("Este producto ya está en tu inventario", {
+                icon: "🛑",
+                duration: 4000,
+                style: {
+                    background: '#fee2e2', 
+                    color: '#991b1b', 
+                    border: '1px solid #f87171' 
+                }
+            })
+            // Si querés que se cierre la cámara al dar error, descomentá onClose()
+            // onClose()
+        } else {
+            toast.success("Código escaneado")
+            onScanSuccess(decodedText) // Dejamos pasar el código al formulario
+        }
+    }
+
+    // Le pasamos nuestro interceptor al hook en vez del onScanSuccess directo
+    const { permisoDenegado } = useScannerCamera(handleScan)
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">

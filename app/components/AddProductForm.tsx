@@ -3,6 +3,7 @@ import { Button, Flex, TextField, Text } from "@radix-ui/themes"
 import { Save, PlusCircle, Loader2, Barcode } from "lucide-react"
 import toast from "react-hot-toast"
 import { Categoria } from "./EditProductModal" 
+import {Product} from "@/app/hooks/useAddProduct"
 
 import BarcodeScanner from "./BarcodeScanner"
 
@@ -12,10 +13,11 @@ interface AddProductFormProps {
     loading: boolean
     categorias: Categoria[]
     onOpenCategoryModal: () => void
+    productos: Product[]
 }
 
 export default function AddProductForm({ 
-    handleSubmit, onClose, loading, categorias, onOpenCategoryModal 
+    handleSubmit, onClose, loading, categorias, onOpenCategoryModal, productos 
 }: AddProductFormProps) {
     const [nombre, setNombre] = useState("")
     const [codigoBarras, setCodigoBarras] = useState("")
@@ -211,8 +213,9 @@ export default function AddProductForm({
             {/* 3. EL ESCÁNER SUELTO AL FINAL (Para que Radix no bloquee los permisos) */}
             {isScannerOpen && (
                 <BarcodeScanner 
-                    onScanSuccess={handleScanSuccess} 
+                    productos={productos} // 👈 ¡No te olvides de pasarle esto!
                     onClose={() => setIsScannerOpen(false)} 
+                    onScanSuccess={handleScanSuccess}
                 />
             )}
         </form>

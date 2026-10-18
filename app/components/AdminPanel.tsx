@@ -83,6 +83,7 @@ export default function AdminPanel() {
                 onSuccess={(newProduct) => {
                     setProductos(prev => [newProduct, ...prev])
                 }}
+                productos={productos} // 
                 onOpenCategoryModal={() => setIsCategoryOpen(true)} 
             />
 
