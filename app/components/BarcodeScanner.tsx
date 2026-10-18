@@ -2,19 +2,33 @@
 import { X, ScanLine, Camera, AlertCircle } from "lucide-react"
 import { IconButton, Text } from "@radix-ui/themes"
 import { useScannerCamera } from "@/app/hooks/useScannerCamera"
-import toast from "react-hot-toast" // 👈 Importamos los toasts
+import toast from "react-hot-toast"
 import { Product } from "../hooks/useAddProduct"
+
 interface BarcodeScannerProps {
     onScanSuccess: (decodedText: string) => void
     onClose: () => void
-    productos: Product[] // 👈 Le pasamos la lista de productos para validar
+    productos: Product[] 
+    // 👇 Agregamos el modo para saber dónde lo estamos usando
+    mode?: "inventario" | "caja" 
 }
 
-export default function BarcodeScanner({ onScanSuccess, onClose, productos }: BarcodeScannerProps) {
+export default function BarcodeScanner({ 
+    onScanSuccess, 
+    onClose, 
+    productos, 
+    mode = "inventario" // Por defecto funciona como inventario para no romperte la otra pantalla
+}: BarcodeScannerProps) {
     
-    // 👇 Interceptamos la lectura de la cámara antes de avisarle a la UI
     const handleScan = (decodedText: string) => {
-        // Chequeamos si el código de barras ya existe en el inventario
+        // 👇 Si estamos en la CAJA, simplemente pasamos el código. 
+        // El componente CheckoutMenu se encarga de buscarlo y agregarlo al carrito.
+        if (mode === "caja") {
+            onScanSuccess(decodedText)
+            return
+        }
+
+        // 👇 Si estamos en el INVENTARIO, aplicamos tu interceptor original antibloqueo
         const yaExiste = productos.some(p => p.codigo_barras === decodedText)
 
         if (yaExiste) {
@@ -27,22 +41,18 @@ export default function BarcodeScanner({ onScanSuccess, onClose, productos }: Ba
                     border: '1px solid #f87171' 
                 }
             })
-            // Si querés que se cierre la cámara al dar error, descomentá onClose()
-            // onClose()
         } else {
             toast.success("Código escaneado")
-            onScanSuccess(decodedText) // Dejamos pasar el código al formulario
+            onScanSuccess(decodedText) 
         }
     }
 
-    // Le pasamos nuestro interceptor al hook en vez del onScanSuccess directo
     const { permisoDenegado } = useScannerCamera(handleScan)
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
             <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
                 
-                {/* --- HEADER --- */}
                 <div className="bg-[#33589c] text-white p-4 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <Camera size={20} />
@@ -58,9 +68,7 @@ export default function BarcodeScanner({ onScanSuccess, onClose, productos }: Ba
                     </IconButton>
                 </div>
 
-                {/* --- CUERPO --- */}
                 <div className="p-4 flex flex-col items-center">
-                    
                     {permisoDenegado ? (
                         <div className="text-center p-6 text-red-500 flex flex-col items-center">
                             <AlertCircle size={40} className="mb-2" />

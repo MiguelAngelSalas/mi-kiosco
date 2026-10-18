@@ -99,12 +99,13 @@ export default function CheckoutMenu() {
                 </div>
             )}
 
-            {/* 👇 EL MODAL DEL ESCÁNER SE QUEDA ACÁ (sin botón flotante) */}
+            {/* EL MODAL DEL ESCÁNER */}
             {isScannerOpen && (
                 <BarcodeScanner 
                     productos={productos} 
                     onClose={() => setIsScannerOpen(false)} 
                     onScanSuccess={handleScanSuccess} 
+                    mode="caja" // 👈 LE AGREGAMOS ESTO
                 />
             )}
         </div>
