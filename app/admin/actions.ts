@@ -5,6 +5,25 @@ import {cookies} from "next/headers"
 
 const API_URL = process.env.API_RENDER
 
+export interface VentaResumen {
+    id: number;
+    hora: string;
+    total: number;
+    metodo: string;
+}
+
+export interface PreCierreDatos {
+    total_recaudado: number;
+    desglose: {
+        efectivo: number;
+        cuenta_dni: number;
+        mercadopago_qr: number;
+        tarjeta: number;
+        transferencia: number;
+    };
+    ventas_realizadas: VentaResumen[];
+}
+
 export async function registerUserAction(formData: FormData) {
     const nombre = formData.get("nombre")?.toString().trim()
     const password = formData.get("password")?.toString()
@@ -125,7 +144,6 @@ export async function loginUserAction(nombre: string, password: string) {
 }
 
 export async function addProductAction(formData: FormData){
-    // 1. Agarramos TODOS los datos que nos pide el Swagger de Agus
     const nombre = formData.get("nombre")?.toString().trim()
     const codigoBarras = formData.get("codigoBarras")?.toString().trim()
     const precioCosto = Number(formData.get("precioCosto"))
@@ -360,4 +378,38 @@ export async function deleteProductAction(id: string | number) {
     } catch (error) {
         return { error: "No se pudo conectar al servidor para eliminar." }
     }
+}
+
+export async function obtenerPreCierreAction(): Promise<{ success: boolean; datos?: PreCierreDatos; error?: string }> {
+    // Simulamos 800ms de latencia de red
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // EL DÍA DE MAÑANA ACÁ VA EL FETCH A C#
+    return {
+        success: true,
+        datos: {
+            total_recaudado: 125400.00,
+            desglose: {
+                efectivo: 45000,
+                cuenta_dni: 25400,
+                mercadopago_qr: 30000,
+                tarjeta: 15000,
+                transferencia: 10000
+            },
+            ventas_realizadas: [
+                { id: 1001, hora: "14:30", total: 1500, metodo: "Efectivo" },
+                { id: 1002, hora: "14:45", total: 3000, metodo: "MercadoPago/QR" },
+                { id: 1003, hora: "15:10", total: 4500, metodo: "Cuenta DNI" },
+                { id: 1004, hora: "16:05", total: 15000, metodo: "Tarjeta" },
+            ]
+        }
+    }
+}
+
+export async function finalizarCierreAction(idCaja: number): Promise<{ success: boolean; mensaje?: string; error?: string }> {
+    // Simulamos 1 segundo procesando el cierre
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // EL DÍA DE MAÑANA ACÁ VA EL POST A C#
+    return { success: true, mensaje: "Cierre registrado exitosamente" }
 }

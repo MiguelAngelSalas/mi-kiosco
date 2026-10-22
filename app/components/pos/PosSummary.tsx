@@ -51,6 +51,7 @@ export default function PosSummary({
             <div className="mt-6">
                 <ButtonCheckOut 
                     subTotal={subTotalFormateado} 
+                    subTotalNum={subTotal} // 👈 Agregamos esta línea
                     items={itemsParaCheckout} 
                     idCaja={1} 
                     onClearCart={vaciarCarrito} 

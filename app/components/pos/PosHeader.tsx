@@ -1,17 +1,29 @@
+"use client"
 import { Heading, Button, Flex, Text } from "@radix-ui/themes"
-import { Store, UserCircle, Settings, LogOut } from "lucide-react"
+import { Store, UserCircle, Settings, LogOut, ClipboardList } from "lucide-react" // 👈 Agregamos ClipboardList
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 
+// Importamos el modal que creamos
+import ModalCierreCaja from "../turnos/ModalCierreCaja" 
+
 interface PosHeaderProps {
     userRole: string
+    idCajaActiva?: number 
 }
 
-export default function PosHeader({ userRole }: PosHeaderProps) {
+export default function PosHeader({ userRole, idCajaActiva = 1 }: PosHeaderProps) {
     const router = useRouter()
+
+    const handleCierreExitoso = () => {
+        // Redirigir al usuario o bloquear la pantalla cuando el cierre sea exitoso
+        toast.success("La jornada ha finalizado.")
+        router.push("/caja-cerrada") // Ajustá esta ruta a la que uses en tu proyecto
+    }
 
     return (
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b-2 border-gray-300 dark:border-gray-800">
+            {/* LADO IZQUIERDO: Logo y Título */}
             <Flex align="center" gap="3">
                 <div className="bg-[#33589c] p-2.5 rounded-xl text-white shadow-md">
                     <Store size={24} />
@@ -24,7 +36,10 @@ export default function PosHeader({ userRole }: PosHeaderProps) {
                 </div>
             </Flex>
             
+            {/* LADO DERECHO: Botonera */}
             <Flex align="center" gap="4" wrap="wrap">
+                
+                {/* Info de Usuario */}
                 <Flex align="center" gap="2" className="bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-800 shadow-sm">
                     <UserCircle size={18} className="text-gray-500" />
                     <Text className="text-gray-700 dark:text-gray-300 font-bold text-sm">
@@ -32,11 +47,29 @@ export default function PosHeader({ userRole }: PosHeaderProps) {
                     </Text>
                 </Flex>
 
+                {/* Estado de la Caja */}
                 <div className="px-3 py-1.5 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-lg text-sm font-bold border border-green-300 dark:border-green-800/50 flex items-center gap-1 shadow-sm">
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                     Caja Habilitada
                 </div>
                 
+                {/* 👇 NUEVO BOTÓN: Ir al historial de Turnos */}
+                <Button 
+                    size="3"
+                    variant="surface"
+                    className="cursor-pointer transition-all duration-200 text-[#33589c] bg-white border border-gray-300 hover:bg-gray-50 shadow-sm dark:bg-transparent dark:border-[#33589c]/30 dark:hover:bg-[#33589c]/10"
+                    onClick={() => router.push("/administradorTurnos")}
+                >
+                    <ClipboardList size={18} className="mr-1" /> Turnos
+                </Button>
+
+                {/* Modal integrado como botón (Finalizar Turno) */}
+                <ModalCierreCaja 
+                    idCajaActiva={idCajaActiva} 
+                    onCierreExitoso={handleCierreExitoso} 
+                />
+                
+                {/* Botón Panel Admin */}
                 {userRole === "administrador" && (
                     <Button 
                         size="3"
@@ -48,6 +81,7 @@ export default function PosHeader({ userRole }: PosHeaderProps) {
                     </Button>
                 )}
                 
+                {/* Botón Salir */}
                 <Button 
                     size="3"
                     variant="soft"
