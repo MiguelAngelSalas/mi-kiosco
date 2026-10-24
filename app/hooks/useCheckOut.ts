@@ -2,13 +2,23 @@ import { useState } from "react"
 import toast from "react-hot-toast"
 import { registrarVentaAction } from "@/app/admin/ventasActions" 
 
+// Interfaz para tipar los datos que mandamos al modal
+export interface DatosVentaExitosa {
+    total: number;
+    montoRecibido: number;
+    medioPago: string;
+}
+
 export function useCheckout(onClearCart: () => void) {
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [selectedMethod, setSelectedMethod] = useState<string | null>(null)
+    
+    // 👇 Estado para controlar el modal verde de éxito
+    const [ventaExitosa, setVentaExitosa] = useState<DatosVentaExitosa | null>(null)
 
-    // 👇 Cambiamos el nombre del tercer parámetro a montoRecibido
-    const handleCompleteSale = async (medioPagoKey: string, items: any[], montoRecibido: number) => {
+    // 👇 Agregamos totalVenta como cuarto parámetro para calcular el vuelto después
+    const handleCompleteSale = async (medioPagoKey: string, items: any[], montoRecibido: number, totalVenta: number) => {
         if (items.length === 0) {
             toast.error("El carrito está vacío")
             return
@@ -19,8 +29,8 @@ export function useCheckout(onClearCart: () => void) {
 
         const payload = {
             medioPago: medioPagoKey, 
-            montoRecibido: montoRecibido, // 👈 Ahora manda la plata real (el total o el billete)
-            idCliente: null, 
+            montoRecibido: Number(montoRecibido) || 0,
+            idCliente: 1, // 👈 Cambiamos el 0 por el 1 (Consumidor Final)
             items: items.map(item => ({
                 idProducto: Number(item.id_producto || item.idProducto),
                 cantidad: Number(item.cantidad)
@@ -34,9 +44,11 @@ export function useCheckout(onClearCart: () => void) {
                 throw new Error(resultado.error)
             }
 
-            toast.success("¡Venta cobrada con éxito!", {
-                icon: "✅",
-                style: { background: '#dcfce3', color: '#166534' }
+            // Ya no mostramos solo el toast, sino que guardamos los datos para abrir el modal
+            setVentaExitosa({
+                total: totalVenta,
+                montoRecibido: Number(montoRecibido) || totalVenta,
+                medioPago: medioPagoKey
             })
             
             onClearCart()
@@ -58,6 +70,9 @@ export function useCheckout(onClearCart: () => void) {
         setIsCheckoutOpen,
         loading,
         selectedMethod,
-        handleCompleteSale
+        handleCompleteSale,
+        // 👇 Exportamos el estado del modal
+        ventaExitosa,
+        setVentaExitosa
     }
 }

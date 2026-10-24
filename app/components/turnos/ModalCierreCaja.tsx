@@ -5,58 +5,40 @@ import toast from "react-hot-toast"
 import { Dialog, Button, Flex } from "@radix-ui/themes"
 import { Lock, Wallet, Receipt, CreditCard, Smartphone, Building2 } from "lucide-react"
 
-import { 
-    obtenerPreCierreAction, 
-    finalizarCierreAction, 
-    PreCierreDatos 
-} from "@/app/admin/actions" // Ajustá tu ruta
+import { obtenerResumenDelDiaAction, PreCierreDatos } from "@/app/admin/ventasActions" 
 
 interface ModalCierreCajaProps {
-    idCajaActiva: number;
     onCierreExitoso: () => void;
 }
 
-export default function ModalCierreCaja({ idCajaActiva, onCierreExitoso }: ModalCierreCajaProps) {
-    // Estados del modal
+export default function ModalCierreCaja({ onCierreExitoso }: ModalCierreCajaProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [procesando, setProcesando] = useState(false)
     const [datosCierre, setDatosCierre] = useState<PreCierreDatos | null>(null)
 
-    // Función para abrir el modal y buscar datos
     const handleOpenChange = async (open: boolean) => {
         setIsOpen(open)
         
-        if (open && !datosCierre) {
+        // 👇 MAGIA APLICADA: Le sacamos el "!datosCierre". Ahora busca siempre que se abre.
+        if (open) {
             setLoading(true)
-            const res = await obtenerPreCierreAction()
+            
+            const res = await obtenerResumenDelDiaAction()
             
             if (res.success && res.datos) {
                 setDatosCierre(res.datos)
             } else {
-                toast.error(res.error || "Error al cargar datos del cierre")
+                toast.error(res.error || "Error al cargar el resumen de ventas")
             }
             
             setLoading(false)
         }
     }
 
-    // Función para procesar el cierre
-    const handleConfirmarCierre = async () => {
-        setProcesando(true)
-        const toastId = toast.loading("Registrando cierre de caja...")
-        
-        const res = await finalizarCierreAction(idCajaActiva)
-        
-        if (res.success) {
-            toast.success(res.mensaje || "Caja cerrada correctamente", { id: toastId })
-            setIsOpen(false)
-            onCierreExitoso()
-        } else {
-            toast.error(res.error || "Fallo al cerrar la caja", { id: toastId })
-        }
-        
-        setProcesando(false)
+    const handleConfirmarCierre = () => {
+        toast.success("Resumen de jornada verificado correctamente")
+        setIsOpen(false)
+        onCierreExitoso()
     }
 
     return (
@@ -68,20 +50,20 @@ export default function ModalCierreCaja({ idCajaActiva, onCierreExitoso }: Modal
                     className="cursor-pointer transition-all duration-200 shadow-md hover:shadow-lg bg-[#33589c] text-white hover:bg-[#28467b]"
                 >
                     <Lock size={18} className="mr-1" />
-                    Finalizar Turno
+                    Resumen del Día
                 </Button>
             </Dialog.Trigger>
 
             <Dialog.Content maxWidth="650px" className="p-0 overflow-hidden bg-white dark:bg-gray-950 rounded-xl shadow-2xl font-sans transition-colors duration-300 border border-gray-200 dark:border-gray-800">
                 
-                {/* ENCABEZADO (Ahora en tonos azules/neutros) */}
+                {/* ENCABEZADO */}
                 <div className="bg-[#33589c]/10 dark:bg-[#33589c]/20 border-b border-[#33589c]/20 dark:border-[#33589c]/30 p-5 flex justify-between items-center">
                     <div>
                         <Dialog.Title className="text-xl font-bold text-[#33589c] dark:text-blue-400 m-0 tracking-tight">
-                            Cierre de Caja #{idCajaActiva}
+                            Resumen de la Jornada
                         </Dialog.Title>
                         <Dialog.Description className="text-sm text-gray-600 dark:text-gray-400 mt-1 m-0 font-medium">
-                            Revisá el resumen de la jornada antes de confirmar.
+                            Total de ventas registradas en el sistema.
                         </Dialog.Description>
                     </div>
                 </div>
@@ -91,7 +73,7 @@ export default function ModalCierreCaja({ idCajaActiva, onCierreExitoso }: Modal
                     {loading ? (
                         <div className="py-12 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                             <div className="animate-spin w-8 h-8 border-4 border-[#33589c] border-t-transparent rounded-full mb-4"></div>
-                            <p className="font-medium">Calculando totales del turno...</p>
+                            <p className="font-medium">Calculando totales del día...</p>
                         </div>
                     ) : datosCierre ? (
                         <div className="flex flex-col lg:flex-row gap-6">
@@ -145,8 +127,12 @@ export default function ModalCierreCaja({ idCajaActiva, onCierreExitoso }: Modal
                                     {datosCierre.ventas_realizadas.map((venta) => (
                                         <div key={venta.id} className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md border border-gray-200 dark:border-gray-800 flex justify-between items-center shadow-sm">
                                             <div className="flex flex-col">
-                                                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{venta.hora} - #{venta.id}</span>
-                                                <span className="text-sm font-bold text-gray-700 dark:text-gray-300 capitalize">{venta.metodo}</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                    {new Date(venta.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} #{venta.id}
+                                                </span>
+                                                <span className="text-sm font-bold text-gray-700 dark:text-gray-300 capitalize">
+                                                    {venta.medioPago.toLowerCase()}
+                                                </span>
                                             </div>
                                             <span className="text-sm font-bold text-gray-900 dark:text-white">$ {venta.total.toFixed(2)}</span>
                                         </div>
@@ -156,7 +142,7 @@ export default function ModalCierreCaja({ idCajaActiva, onCierreExitoso }: Modal
 
                         </div>
                     ) : (
-                        <p className="text-red-500 text-center py-10 font-medium">No se encontraron datos para procesar el cierre.</p>
+                        <p className="text-red-500 text-center py-10 font-medium">No se encontraron ventas para mostrar.</p>
                     )}
                 </div>
 
@@ -168,9 +154,8 @@ export default function ModalCierreCaja({ idCajaActiva, onCierreExitoso }: Modal
                             color="gray" 
                             size="3" 
                             className="cursor-pointer font-medium" 
-                            disabled={procesando}
                         >
-                            Cancelar
+                            Cerrar
                         </Button>
                     </Dialog.Close>
                     
@@ -178,9 +163,8 @@ export default function ModalCierreCaja({ idCajaActiva, onCierreExitoso }: Modal
                         size="3" 
                         className="cursor-pointer bg-[#33589c] hover:bg-[#28467b] text-white transition-all font-bold shadow-md"
                         onClick={handleConfirmarCierre}
-                        disabled={procesando || loading}
                     >
-                        {procesando ? "Procesando..." : "Confirmar Cierre"}
+                        Confirmar
                     </Button>
                 </div>
             </Dialog.Content>

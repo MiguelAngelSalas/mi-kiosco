@@ -65,7 +65,6 @@ export default function PosHeader({ userRole, idCajaActiva = 1 }: PosHeaderProps
 
                 {/* Modal integrado como botón (Finalizar Turno) */}
                 <ModalCierreCaja 
-                    idCajaActiva={idCajaActiva} 
                     onCierreExitoso={handleCierreExitoso} 
                 />
                 

@@ -3,7 +3,7 @@
 import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
 
-const API_URL = process.env.API_RENDER || "http://localhost:3000" // Ajustá tu base URL
+const API_URL = process.env.API_RENDER 
 
 interface VentaPayload {
     medioPago: string
@@ -12,6 +12,40 @@ interface VentaPayload {
         idProducto: number
         cantidad: number
     }[]
+}
+
+export interface VentaItemBackend {
+    idProducto: number;
+    nombreProducto: string;
+    cantidad: number;
+    precioUnitario: number;
+    subtotal: number;
+}
+
+export interface VentaBackend {
+    id: number;
+    fecha: string;
+    medioPago: string;
+    total: number;
+    montoRecibido: number;
+    vuelto: number;
+    idUsuario: number;
+    nombreUsuario: string;
+    idCliente: number;
+    nombreCliente: string;
+    items: VentaItemBackend[];
+}
+
+export interface PreCierreDatos {
+    total_recaudado: number;
+    desglose: {
+        efectivo: number;
+        cuenta_dni: number;
+        mercadopago_qr: number;
+        tarjeta: number;
+        transferencia: number;
+    };
+    ventas_realizadas: VentaBackend[];
 }
 
 export async function registrarVentaAction(payload: VentaPayload) {
@@ -62,5 +96,85 @@ export async function registrarVentaAction(payload: VentaPayload) {
     } catch(error) {
         console.log("🚨 ERROR DE RED/FETCH (VENTA):", error)
         return { error: `No se pudo conectar al servidor` }
+    }
+}
+
+export async function obtenerResumenDelDiaAction(): Promise<{ success: boolean; datos?: PreCierreDatos; error?: string }> {
+    try {
+        // 👇 Leemos la cookie directamente desde el servidor
+        const cookieStore = await cookies()
+        const tokenCookie = cookieStore.get("kiosco_token")
+        let token = tokenCookie?.value || ""
+        token = token.replace(/"/g, "") // Por las dudas lo limpiamos
+
+        if (!token) {
+            throw new Error("No hay sesión activa");
+        }
+
+        const res = await fetch(`${API_URL}/api/Ventas`, {
+            method: "GET",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}` 
+            },
+            cache: "no-store"
+        });
+
+        if (!res.ok) {
+            const errorBody = await res.text();
+            console.error(`🚨 ERROR DEL BACKEND C#: Status ${res.status} | Mensaje:`, errorBody);
+            throw new Error(`Error ${res.status} al conectar con C#`);
+        }
+
+        const ventas: VentaBackend[] = await res.json();
+
+        // 3. Variables para calcular los totales dinámicamente
+        let totalRecaudado = 0;
+        const desglose = { 
+            efectivo: 0, 
+            cuenta_dni: 0, 
+            mercadopago_qr: 0, 
+            tarjeta: 0, 
+            transferencia: 0 
+        };
+
+        // 4. Recorremos las ventas para sumar según el medio de pago
+        ventas.forEach(venta => {
+            totalRecaudado += venta.total;
+            
+            // Normalizamos el string para evitar problemas de mayúsculas/minúsculas
+            const medio = venta.medioPago.trim().toUpperCase();
+            
+            if (medio === "EFECTIVO") {
+                desglose.efectivo += venta.total;
+            } else if (medio === "CUENTA DNI") {
+                desglose.cuenta_dni += venta.total;
+            } else if (medio === "MERCADOPAGO" || medio === "QR") {
+                desglose.mercadopago_qr += venta.total;
+            } else if (medio === "TARJETA") {
+                desglose.tarjeta += venta.total;
+            } else if (medio === "TRANSFERENCIA") {
+                desglose.transferencia += venta.total;
+            }
+        });
+
+        return {
+            success: true,
+            datos: {
+                total_recaudado: totalRecaudado,
+                desglose,
+                ventas_realizadas: ventas // Pasamos el array completo para listar en la columna derecha
+            }
+        };
+    } catch (error: unknown) {
+        let errorMessage = "Ocurrió un error desconocido";
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+        
+        // 👇 AGREGÁ ESTO PARA VER EL ERROR REAL EN TU TERMINAL
+        console.error("ERROR EN EL FETCH AL BACKEND:", error); 
+        
+        return { success: false, error: errorMessage };
     }
 }
