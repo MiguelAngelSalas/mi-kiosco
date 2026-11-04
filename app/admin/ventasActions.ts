@@ -87,7 +87,7 @@ export async function registrarVentaAction(payload: VentaPayload) {
         }
 
         // 6. Refrescamos la UI de la caja para que baje el stock automáticamente
-        revalidatePath("/caja") // Ajustá esto a la ruta real de tu POS
+        revalidatePath("/CheckoutMenu") // Ajustá esto a la ruta real de tu POS
 
         return { 
             success: true, 

@@ -8,6 +8,8 @@ import ModalVentaExitosa from "./ModalVentaExitosa" // 👈 Asegurate de que la 
 interface CartItem {
     id_producto?: number 
     idProducto?: number
+    nombre?: string // 👈 Agregamos esto
+    producto?: string // 👈 O esto (dejá el que uses en tu base de datos)
     cantidad: number
     precioUnitario: number
 }
@@ -52,7 +54,7 @@ export default function ButtonCheckOut({ subTotal, subTotalNum, items, onClearCa
     const formatCurrency = (val: number) => `$${val.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
 
     // ELIMINAMOS EL "if (items.length === 0) return ..." DE ACÁ
-
+    console.log("CARRITO:", items)
     return (
         <>
             {/* SI NO HAY ITEMS, MOSTRAMOS EL BOTÓN GRIS. SI HAY ITEMS, EL MODAL DE COBRO */}

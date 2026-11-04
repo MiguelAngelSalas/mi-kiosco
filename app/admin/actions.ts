@@ -413,3 +413,29 @@ export async function finalizarCierreAction(idCaja: number): Promise<{ success: 
     // EL DÍA DE MAÑANA ACÁ VA EL POST A C#
     return { success: true, mensaje: "Cierre registrado exitosamente" }
 }
+
+export async function getVentasAction() {
+    const cookieStore = await cookies()
+    const token = cookieStore.get("kiosco_token")?.value
+
+    if (!token) return { error: "No estás autorizado" }
+
+    try {
+        const res = await fetch(`${API_URL}/api/Ventas`, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            cache: 'no-store'
+        })
+        
+        if (!res.ok) return { error: "Error al traer las ventas" }
+        
+        const data = await res.json()
+        return { success: true, data }
+        
+    } catch (error) {
+        return { error: "No se pudo conectar al servidor" }
+    }
+}

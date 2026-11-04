@@ -29,6 +29,7 @@ export default function AdminHeader() {
                     <Store size={18} className="mr-1" />
                     Ir al Mostrador
                 </Button>
+                
                 <Button 
                     size="3"
                     variant="soft" 

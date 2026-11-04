@@ -1,23 +1,31 @@
 import { useState } from "react"
 import toast from "react-hot-toast"
+import { useRouter } from "next/navigation" // 👈 1. Importamos el router de Next.js
 import { registrarVentaAction } from "@/app/admin/ventasActions" 
 
-// Interfaz para tipar los datos que mandamos al modal
+export interface ItemComprobante {
+    nombre: string;
+    cantidad: number;
+    precio: number;
+    subtotal: number;
+}
+
 export interface DatosVentaExitosa {
     total: number;
     montoRecibido: number;
     medioPago: string;
+    items: ItemComprobante[]; 
 }
 
 export function useCheckout(onClearCart: () => void) {
+    const router = useRouter() // 👈 2. Instanciamos el router
+
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [selectedMethod, setSelectedMethod] = useState<string | null>(null)
     
-    // 👇 Estado para controlar el modal verde de éxito
     const [ventaExitosa, setVentaExitosa] = useState<DatosVentaExitosa | null>(null)
 
-    // 👇 Agregamos totalVenta como cuarto parámetro para calcular el vuelto después
     const handleCompleteSale = async (medioPagoKey: string, items: any[], montoRecibido: number, totalVenta: number) => {
         if (items.length === 0) {
             toast.error("El carrito está vacío")
@@ -28,14 +36,17 @@ export function useCheckout(onClearCart: () => void) {
         setSelectedMethod(medioPagoKey)
 
         const payload = {
-            medioPago: medioPagoKey, 
-            montoRecibido: Number(montoRecibido) || 0,
-            idCliente: 1, // 👈 Cambiamos el 0 por el 1 (Consumidor Final)
-            items: items.map(item => ({
-                idProducto: Number(item.id_producto || item.idProducto),
-                cantidad: Number(item.cantidad)
-            }))
-        }
+                medioPago: medioPagoKey, 
+                
+                // 👇 ACÁ ESTÁ EL FIX: Le mandamos al backend el costo real de los productos
+                montoRecibido: Number(totalVenta), 
+                
+                idCliente: 1, // Consumidor Final
+                items: items.map(item => ({
+                    idProducto: Number(item.id_producto || item.idProducto),
+                    cantidad: Number(item.cantidad)
+                }))
+            }
 
         try {
             const resultado = await registrarVentaAction(payload)
@@ -44,15 +55,27 @@ export function useCheckout(onClearCart: () => void) {
                 throw new Error(resultado.error)
             }
 
-            // Ya no mostramos solo el toast, sino que guardamos los datos para abrir el modal
+            // EXTRAEMOS LOS ITEMS DEL BACKEND (Que sí traen el nombreProducto)
+            const itemsDelBackend = resultado.data?.items || [];
+            const itemsParaElPDF = itemsDelBackend.length > 0 ? itemsDelBackend : items;
+
             setVentaExitosa({
                 total: totalVenta,
                 montoRecibido: Number(montoRecibido) || totalVenta,
-                medioPago: medioPagoKey
+                medioPago: medioPagoKey,
+                items: itemsParaElPDF.map((item: any) => ({
+                    nombre: item.nombreProducto || item.nombre || item.producto || `Prod. #${item.idProducto || item.id_producto}`,
+                    cantidad: Number(item.cantidad),
+                    precio: Number(item.precioUnitario),
+                    subtotal: Number(item.subtotal) || (Number(item.cantidad) * Number(item.precioUnitario))
+                }))
             })
             
             onClearCart()
             setIsCheckoutOpen(false)
+
+            // 👇 3. FORZAMOS LA ACTUALIZACIÓN: Esto recarga los datos en segundo plano y actualiza el stock
+            router.refresh()
 
         } catch (error: any) {
             console.error("Error en la vista:", error)
@@ -71,7 +94,6 @@ export function useCheckout(onClearCart: () => void) {
         loading,
         selectedMethod,
         handleCompleteSale,
-        // 👇 Exportamos el estado del modal
         ventaExitosa,
         setVentaExitosa
     }
