@@ -159,7 +159,7 @@ export default function ButtonCheckOut({ subTotal, subTotalNum, items, onClearCa
 
                                         {/* 👇 BOTONERA RÁPIDA DE BILLETES */}
                                         <div className="grid grid-cols-3 gap-2 mt-3">
-                                            {[500,1000, 2000, 10000].map((billete) => (
+                                            {[500,1000, 2000, 10000,20000].map((billete) => (
                                                 <Button 
                                                     key={billete}
                                                     type="button"
