@@ -3,13 +3,13 @@ import { useState } from "react"
 import { Dialog, Button, Flex, IconButton, TextField, Text } from "@radix-ui/themes"   
 import { Wallet, X, CheckCircle2, ChevronLeft, DollarSign } from "lucide-react"
 import { useCheckout } from "@/app/hooks/useCheckOut" 
-import ModalVentaExitosa from "./ModalVentaExitosa" // 👈 Asegurate de que la ruta esté bien
+import ModalVentaExitosa from "./ModalVentaExitosa" 
 
 interface CartItem {
     id_producto?: number 
     idProducto?: number
-    nombre?: string // 👈 Agregamos esto
-    producto?: string // 👈 O esto (dejá el que uses en tu base de datos)
+    nombre?: string 
+    producto?: string 
     cantidad: number
     precioUnitario: number
 }
@@ -53,11 +53,8 @@ export default function ButtonCheckOut({ subTotal, subTotalNum, items, onClearCa
 
     const formatCurrency = (val: number) => `$${val.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
 
-    // ELIMINAMOS EL "if (items.length === 0) return ..." DE ACÁ
-    console.log("CARRITO:", items)
     return (
         <>
-            {/* SI NO HAY ITEMS, MOSTRAMOS EL BOTÓN GRIS. SI HAY ITEMS, EL MODAL DE COBRO */}
             {items.length === 0 ? (
                 <Button size="4" variant="solid" disabled className="w-full mt-6 opacity-50 bg-[#589c33] text-white">
                     <Wallet size={20} className="mr-2" /> Realizar Venta
@@ -159,8 +156,34 @@ export default function ButtonCheckOut({ subTotal, subTotalNum, items, onClearCa
                                                 <DollarSign size={16} className="text-gray-400" />
                                             </TextField.Slot>
                                         </TextField.Root>
+
+                                        {/* 👇 BOTONERA RÁPIDA DE BILLETES */}
+                                        <div className="grid grid-cols-3 gap-2 mt-3">
+                                            {[500,1000, 2000, 10000].map((billete) => (
+                                                <Button 
+                                                    key={billete}
+                                                    type="button"
+                                                    variant="soft" 
+                                                    color="gray" 
+                                                    className="cursor-pointer font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                                                    onClick={() => setMontoEfectivo(billete.toString())}
+                                                >
+                                                    ${billete.toLocaleString("es-AR")}
+                                                </Button>
+                                            ))}
+                                            <Button 
+                                                type="button"
+                                                variant="soft" 
+                                                color="green" 
+                                                className="cursor-pointer font-bold col-span-2"
+                                                onClick={() => setMontoEfectivo(subTotalNum.toString())}
+                                            >
+                                                Pago Exacto
+                                            </Button>
+                                        </div>
                                     </div>
 
+                                    {/* 👇 CAJA DE VUELTO/ERROR (Informa claramente si falta dinero) */}
                                     <div className={`rounded-xl p-4 mb-6 border flex justify-between items-center transition-colors ${
                                         montoEfectivo === "" ? 'bg-gray-50 border-gray-200' :
                                         esMontoValido ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
@@ -206,7 +229,6 @@ export default function ButtonCheckOut({ subTotal, subTotalNum, items, onClearCa
                 </Dialog.Root>
             )}
 
-            {/* 👇 AHORA EL MODAL VERDE VIVE SIEMPRE EN EL DOM Y NO LO BORRA EL CARRITO VACÍO */}
             <ModalVentaExitosa 
                 open={ventaExitosa !== null} 
                 onOpenChange={(open) => {
