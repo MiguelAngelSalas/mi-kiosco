@@ -77,7 +77,7 @@ export default function PosHeader({ userRole, idCajaActiva }: PosHeaderProps) {
                     <Button 
                         size="3"
                         className="cursor-pointer transition-all duration-200 bg-[#33589c] hover:bg-[#28467b] text-white shadow-md"
-                        onClick={() => router.push("/AdminPage")}
+                        onClick={() => router.push("/admin")}
                     >
                         <Settings size={18} className="mr-1" /> Panel Admin
                     </Button>
