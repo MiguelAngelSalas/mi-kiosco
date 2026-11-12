@@ -1,0 +1,37 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "@radix-ui/themes/styles.css";
+import "./globals.css";
+import {Toaster} from "react-hot-toast"
+
+// Importamos tu nuevo administrador
+import { ThemeProvider } from "@/src/app/components/ui/ThemeProviders"
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Mi Kiosco", 
+  description: "Punto de venta y administración",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="es" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="min-h-full flex flex-col">
+        {/* Envolvemos la app entera con el ThemeProvider que acabás de crear */}
+        <ThemeProvider>
+          <Toaster position="bottom-right" />
+          {children}
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
