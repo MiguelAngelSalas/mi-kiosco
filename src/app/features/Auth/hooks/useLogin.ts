@@ -27,7 +27,13 @@ export function useLogin() {
         const role = result.role!
         toast.success(`Bienvenido ${inputUsername}!`)
 
+        // 1. Guardamos el rol 
         localStorage.setItem("rolUsuario", role)
+        
+        // 👇 2. EL ARREGLO: Buscamos el nombre adentro de result.user, 
+        // y si TypeScript o el backend no lo encuentran, usamos el inputUsername
+        const nombreParaGuardar = result.user?.nombre || inputUsername
+        localStorage.setItem("nombreUsuario", nombreParaGuardar) 
 
         if (role === "administrador") {
             router.push("/admin")
@@ -36,7 +42,6 @@ export function useLogin() {
         }
     }
 
-    // Exponemos hacia afuera solo lo que la interfaz necesita para funcionar
     return {
         inputUsername,
         setInputUsername,

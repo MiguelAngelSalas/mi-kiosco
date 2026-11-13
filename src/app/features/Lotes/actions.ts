@@ -100,3 +100,62 @@ export async function getLotesProductoAction(idProducto: number) {
         return { error: "No se pudo conectar al servidor" }
     }
 }
+
+export async function getVencimientosProximosAction(dias: number = 30) {
+    const cookieStore = await cookies()
+    let token = cookieStore.get("kiosco_token")?.value || ""
+    token = token.replace(/"/g, "") 
+
+    if (!token) {
+        return { success: false, error: "No estás autorizado" }
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/api/lotes/vencimientos-proximos?dias=${dias}`, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            cache: "no-store"
+        })
+
+        if (!res.ok) {
+            return { success: false, error: "Error al traer los vencimientos próximos" }
+        }
+
+        const data = await res.json()
+        return { success: true, data }
+    } catch (error) {
+        return { success: false, error: "No se pudo conectar al servidor" }
+    }
+}
+
+export async function eliminarLoteAction(idLote: number) {
+    const cookieStore = await cookies()
+    let token = cookieStore.get("kiosco_token")?.value || ""
+    token = token.replace(/"/g, "") 
+
+    if (!token) {
+        return { success: false, error: "No estás autorizado" }
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/api/lotes/${idLote}`, {
+            method: "DELETE",
+            headers: {
+                "Accept": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        })
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => null)
+            return { success: false, error: errorData?.message || "No se pudo eliminar el lote" }
+        }
+
+        return { success: true }
+    } catch (error) {
+        return { success: false, error: "Error de conexión al eliminar el lote" }
+    }
+}

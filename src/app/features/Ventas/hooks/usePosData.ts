@@ -3,20 +3,28 @@ import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { getProductsAction } from "../../Productos/actions"
 import { Product } from "../../Productos/hooks/interfaces/interfaces" 
+
 export function usePosData() {
     const router = useRouter()
     const [userRole, setUserRole] = useState("")
+    const [userName, setUserName] = useState("") // 👈 1. NUEVO ESTADO PARA EL NOMBRE
     const [productos, setProductos] = useState<Product[]>([])
     const [loadingData, setLoadingData] = useState(true)
 
     useEffect(() => {
         const storedRole = localStorage.getItem("rolUsuario")
+        
+        // 👇 2. Buscamos el nombre (Ajustá "nombreUsuario" si en tu login le pusiste otra clave)
+        const storedName = localStorage.getItem("nombreUsuario") || "Usuario"
+        
         if (!storedRole) {
             toast.error("Debés iniciar sesión")
             router.push("/login")
             return
         } 
+        
         setUserRole(storedRole)
+        setUserName(storedName) // 👈 3. Lo guardamos en el estado
 
         const fetchRealData = async () => {
             setLoadingData(true)
@@ -42,5 +50,6 @@ export function usePosData() {
         fetchRealData()
     }, [router])
 
-    return { userRole, productos, loadingData }
+    // 👇 4. Exportamos el userName para que CheckoutMenu lo pueda usar
+    return { userName, userRole, productos, loadingData } 
 }

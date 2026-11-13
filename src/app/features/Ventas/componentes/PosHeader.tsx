@@ -8,18 +8,20 @@ import ModalCierreCaja from "../../Turnos/ModalCierreCaja"
 import { ModalControlVentas } from "./ModalControlVentas"
 
 interface PosHeaderProps {
-    userRole: string
-    // 👇 Permitimos que sea null y le sacamos el = 1 engañoso
+    userName?: string // 👇 Nueva propiedad para el nombre visible
+    userRole: string  // Lo mantenemos para validar si es admin o no
     idCajaActiva?: number | null 
 }
 
-export default function PosHeader({ userRole, idCajaActiva }: PosHeaderProps) {
+export default function PosHeader({ userName, userRole, idCajaActiva }: PosHeaderProps) {
     const router = useRouter()
 
     const handleCierreExitoso = () => {
-        toast.success("La jornada ha finalizado.")
-        router.push("/caja-cerrada") 
+        router.push("/administradorTurnos") 
     }
+
+    // Evaluamos si hay una caja abierta válida
+    const cajaAbierta = idCajaActiva && idCajaActiva > 0;
 
     return (
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b-2 border-gray-300 dark:border-gray-800">
@@ -39,19 +41,26 @@ export default function PosHeader({ userRole, idCajaActiva }: PosHeaderProps) {
             {/* LADO DERECHO: Botonera */}
             <Flex align="center" gap="4" wrap="wrap">
                 
-                {/* Info de Usuario */}
+                {/* 👇 Muestra el NOMBRE en vez del rol */}
                 <Flex align="center" gap="2" className="bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-800 shadow-sm">
                     <UserCircle size={18} className="text-gray-500" />
                     <Text className="text-gray-700 dark:text-gray-300 font-bold text-sm">
-                        <span className="capitalize">{userRole || "Usuario"}</span>
+                        <span className="capitalize">{userName || "Usuario"}</span>
                     </Text>
                 </Flex>
 
-                {/* Estado de la Caja */}
-                <div className="px-3 py-1.5 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-lg text-sm font-bold border border-green-300 dark:border-green-800/50 flex items-center gap-1 shadow-sm">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    Caja Habilitada
-                </div>
+                {/* 👇 ESTADO DINÁMICO DE LA CAJA */}
+                {cajaAbierta ? (
+                    <div className="px-3 py-1.5 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-lg text-sm font-bold border border-green-300 dark:border-green-800/50 flex items-center gap-1 shadow-sm">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        Caja Habilitada
+                    </div>
+                ) : (
+                    <div className="px-3 py-1.5 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded-lg text-sm font-bold border border-red-300 dark:border-red-800/50 flex items-center gap-1 shadow-sm">
+                        <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                        Caja Cerrada
+                    </div>
+                )}
                 
                 {/* BOTÓN TURNOS */}
                 <Button 
@@ -62,17 +71,17 @@ export default function PosHeader({ userRole, idCajaActiva }: PosHeaderProps) {
                     <ClipboardList size={18} className="mr-1" /> Turnos
                 </Button>
 
-                {/* 👇 NUEVO MODAL DE CONTROL RÁPIDO: Ahora es 100% autónomo, no necesita props */}
+                {/* MODAL DE CONTROL RÁPIDO */}
                 <ModalControlVentas />
 
-                {/* MODAL DE CIERRE DE CAJA: Este sí necesita el ID, le pasamos || 0 por seguridad */}
+                {/* MODAL DE CIERRE DE CAJA */}
                 <ModalCierreCaja 
                     idCaja={idCajaActiva || 0} 
                     onCierreExitoso={handleCierreExitoso} 
                     estiloHeader={true} 
                 />
                 
-                {/* BOTÓN PANEL ADMIN */}
+                {/* BOTÓN PANEL ADMIN (Depende del userRole) */}
                 {userRole === "administrador" && (
                     <Button 
                         size="3"
@@ -92,6 +101,8 @@ export default function PosHeader({ userRole, idCajaActiva }: PosHeaderProps) {
                     onClick={() => {
                         localStorage.removeItem("rolUsuario")
                         localStorage.removeItem("token")
+                        // 👇 Si también guardás el nombre en localStorage, borralo acá
+                        localStorage.removeItem("nombreUsuario") 
                         toast.success("Sesión cerrada")
                         router.push("/login")
                     }}

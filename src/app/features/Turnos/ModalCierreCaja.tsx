@@ -3,26 +3,35 @@ import { useState } from "react"
 import toast from "react-hot-toast"
 
 import { Dialog, Button, Flex } from "@radix-ui/themes"
-import { Lock, Wallet, Receipt, CreditCard, Smartphone, Building2, BarChart3 } from "lucide-react"
-import { obtenerResumenCajaAction } from "./actions" 
+import { Lock, Wallet, Receipt, CreditCard, Smartphone, Building2, BarChart3, Loader2, AlertCircle } from "lucide-react"
+import { obtenerResumenCajaAction, cerrarCajaAction } from "./actions" 
 import { PreCierreDatos } from "./interfaces/interfaces"
 
 interface ModalCierreCajaProps {
     onCierreExitoso?: () => void;
     esSoloResumen?: boolean;
-    idCaja: number;
-    estiloHeader?: boolean; // 👇 NUEVA PROP MAGICA
+    idCaja?: number | null; // 👈 Le permitimos recibir null o undefined
+    estiloHeader?: boolean; 
 }
 
 export default function ModalCierreCaja({ onCierreExitoso, esSoloResumen = false, idCaja, estiloHeader = false }: ModalCierreCajaProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [isClosing, setIsClosing] = useState(false) 
     const [datosCierre, setDatosCierre] = useState<PreCierreDatos | null>(null)
+
+    // Evaluamos si el ID de la caja es válido
+    const cajaInvalida = !idCaja || idCaja <= 0
 
     const handleOpenChange = async (open: boolean) => {
         setIsOpen(open)
         
         if (open) {
+            // Si la caja no es válida, cortamos la ejecución acá
+            if (cajaInvalida) {
+                return
+            }
+
             setLoading(true)
             const res = await obtenerResumenCajaAction(idCaja)
             
@@ -35,17 +44,34 @@ export default function ModalCierreCaja({ onCierreExitoso, esSoloResumen = false
         }
     }
 
-    const handleAccionPrincipal = () => {
-        setIsOpen(false)
-        if (!esSoloResumen && onCierreExitoso) {
-            onCierreExitoso() 
+    const handleAccionPrincipal = async () => {
+        if (cajaInvalida) return;
+
+        if (esSoloResumen) {
+            setIsOpen(false)
+            if (onCierreExitoso) onCierreExitoso()
+            return
         }
+
+        setIsClosing(true)
+        const toastId = toast.loading("Cerrando la caja en el sistema...")
+
+        const res = await cerrarCajaAction(idCaja)
+
+        if (res.success) {
+            toast.success("Caja cerrada correctamente.", { id: toastId })
+            setIsOpen(false)
+            if (onCierreExitoso) onCierreExitoso() 
+        } else {
+            toast.error(res.error || "No se pudo cerrar la caja.", { id: toastId })
+        }
+        
+        setIsClosing(false)
     }
 
     return (
         <Dialog.Root open={isOpen} onOpenChange={handleOpenChange}>
             
-            {/* EL BOTÓN QUE ABRE EL MODAL SE ADAPTA AL HEADER O A LA PÁGINA */}
             <Dialog.Trigger>
                 <Button 
                     size="3"
@@ -64,21 +90,41 @@ export default function ModalCierreCaja({ onCierreExitoso, esSoloResumen = false
                 </Button>
             </Dialog.Trigger>
 
-            <Dialog.Content maxWidth="650px" className="p-0 overflow-hidden bg-white dark:bg-gray-950 rounded-xl shadow-2xl font-sans border border-gray-200 dark:border-gray-800">
+            <Dialog.Content maxWidth={cajaInvalida ? "400px" : "650px"} className="p-0 overflow-hidden bg-white dark:bg-gray-950 rounded-xl shadow-2xl font-sans border border-gray-200 dark:border-gray-800">
                 
-                <div className={`${esSoloResumen ? 'bg-indigo-600/10 dark:bg-indigo-600/20 border-indigo-600/20' : 'bg-[#33589c]/10 dark:bg-[#33589c]/20 border-[#33589c]/20'} border-b p-5 flex justify-between items-center`}>
+                <div className={`${
+                    cajaInvalida 
+                    ? 'bg-red-600/10 dark:bg-red-600/20 border-red-600/20' 
+                    : (esSoloResumen ? 'bg-indigo-600/10 dark:bg-indigo-600/20 border-indigo-600/20' : 'bg-[#33589c]/10 dark:bg-[#33589c]/20 border-[#33589c]/20')
+                } border-b p-5 flex justify-between items-center`}>
                     <div>
-                        <Dialog.Title className={`text-xl font-bold m-0 tracking-tight ${esSoloResumen ? 'text-indigo-600 dark:text-indigo-400' : 'text-[#33589c] dark:text-blue-400'}`}>
-                            {esSoloResumen ? "Arqueo de Caja Parcial" : "Cierre de Jornada"}
+                        <Dialog.Title className={`text-xl font-bold m-0 tracking-tight ${
+                            cajaInvalida ? 'text-red-600 dark:text-red-400' 
+                            : (esSoloResumen ? 'text-indigo-600 dark:text-indigo-400' : 'text-[#33589c] dark:text-blue-400')
+                        }`}>
+                            {cajaInvalida ? "Atención" : (esSoloResumen ? "Arqueo de Caja Parcial" : "Cierre de Jornada")}
                         </Dialog.Title>
                         <Dialog.Description className="text-sm text-gray-600 dark:text-gray-400 mt-1 m-0 font-medium">
-                            {esSoloResumen ? "Estado actual de las ventas (La caja seguirá abierta)." : "Total de ventas registradas. Esta acción cerrará la caja."}
+                            {cajaInvalida 
+                                ? "No se detectó ninguna caja abierta." 
+                                : (esSoloResumen ? "Estado actual de las ventas (La caja seguirá abierta)." : "Total de ventas registradas. Esta acción cerrará la caja.")}
                         </Dialog.Description>
                     </div>
                 </div>
 
                 <div className="p-6">
-                    {loading ? (
+                    {/* 👇 INTERFAZ PARA CAJA INVÁLIDA */}
+                    {cajaInvalida ? (
+                        <div className="py-8 flex flex-col items-center justify-center text-center">
+                            <AlertCircle size={48} className="text-red-500 mb-4" />
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No hay caja habilitada</h3>
+                            <p className="text-gray-600 dark:text-gray-400">
+                                Para poder cerrar el turno o ver el resumen, primero debés abrir una caja desde el administrador de turnos.
+                            </p>
+                        </div>
+                    ) : 
+                    // 👇 INTERFAZ NORMAL SI HAY CAJA
+                    loading ? (
                         <div className="py-12 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                             <div className="animate-spin w-8 h-8 border-4 border-[#33589c] border-t-transparent rounded-full mb-4"></div>
                             <p className="font-medium">Calculando totales de la caja...</p>
@@ -130,7 +176,7 @@ export default function ModalCierreCaja({ onCierreExitoso, esSoloResumen = false
                                 </h4>
                                 
                                 <div className="overflow-y-auto max-h-[250px] pr-2 space-y-3 custom-scrollbar">
-                                    {datosCierre.ventas_realizadas.map((venta) => (
+                                    {datosCierre.ventas_realizadas?.map((venta) => (
                                         <div key={venta.id} className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md border border-gray-200 dark:border-gray-800 flex justify-between items-center shadow-sm">
                                             <div className="flex flex-col">
                                                 <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
@@ -154,18 +200,23 @@ export default function ModalCierreCaja({ onCierreExitoso, esSoloResumen = false
 
                 <div className="bg-gray-50 dark:bg-gray-900 p-5 flex justify-end gap-3 border-t border-gray-200 dark:border-gray-800">
                     <Dialog.Close>
-                        <Button variant="soft" color="gray" size="3" className="cursor-pointer font-medium">
-                            {esSoloResumen ? "Volver" : "Cancelar"}
+                        <Button disabled={isClosing} variant="soft" color="gray" size="3" className="cursor-pointer font-medium">
+                            {cajaInvalida ? "Entendido" : (esSoloResumen ? "Volver" : "Cancelar")}
                         </Button>
                     </Dialog.Close>
                     
-                    <Button 
-                        size="3" 
-                        className={`cursor-pointer transition-all font-bold shadow-md text-white ${esSoloResumen ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-red-600 hover:bg-red-700'}`}
-                        onClick={handleAccionPrincipal}
-                    >
-                        {esSoloResumen ? "Aceptar" : "Confirmar Cierre de Caja"}
-                    </Button>
+                    {/* 👇 Ocultamos el botón principal si la caja es inválida */}
+                    {!cajaInvalida && (
+                        <Button 
+                            size="3" 
+                            disabled={isClosing}
+                            className={`cursor-pointer transition-all font-bold shadow-md text-white ${esSoloResumen ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-red-600 hover:bg-red-700'}`}
+                            onClick={handleAccionPrincipal}
+                        >
+                            {isClosing ? <Loader2 size={18} className="animate-spin mr-2" /> : null}
+                            {esSoloResumen ? "Aceptar" : (isClosing ? "Cerrando..." : "Confirmar Cierre de Caja")}
+                        </Button>
+                    )}
                 </div>
             </Dialog.Content>
         </Dialog.Root>

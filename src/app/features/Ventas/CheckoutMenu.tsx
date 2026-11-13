@@ -24,7 +24,7 @@ export default function CheckoutMenu() {
     // 👇 2. Estado para guardar el ID de la caja activa
     const [idCajaActiva, setIdCajaActiva] = useState<number | null>(null)
 
-    const { userRole, productos, loadingData } = usePosData()
+    const { userName, userRole, productos, loadingData } = usePosData()
     const { 
         cart, handleAddCart, handleIncrement, handleDecrement, handleManualQuantity, 
         handleManualBlur, handleRemove, vaciarCarrito, subTotal, subTotalFormateado, 
@@ -74,10 +74,10 @@ export default function CheckoutMenu() {
             
             {/* 👇 4. Le pasamos el ID real de la caja al Header (para el botón de Cerrar Turno) */}
             <PosHeader 
+                userName={userName} // 👈 Le inyectás el nombre acá
                 userRole={userRole} 
                 idCajaActiva={idCajaActiva} 
             />
-
             <PosSearch 
                 searchTerm={searchTerm}
                 handleSearchChange={handleSearchChange}
